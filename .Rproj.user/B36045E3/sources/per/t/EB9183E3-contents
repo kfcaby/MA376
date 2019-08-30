@@ -1,0 +1,57 @@
+---
+title: "Exploration Example"
+author: "Kevin Cummiskey"
+date: "August 22, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+
+#read in the data
+houses = read_csv(file = "redfin_2019-08-22-04-53-45.csv")
+
+```
+
+Let $x = y + 5$
+
+## Step 1. Ask a Research Question
+
+What are major factors affecting houses prices in Cornwall?
+
+## Step 2. Design a Study and Collect Data
+
+Let's do some data analysis
+```{r}
+houses %>% group_by(CITY) %>% summarise(mean(PRICE), 
+                     median(PRICE),
+                     sd(PRICE), n())
+```
+
+Here are some descriptive plots
+
+```{r}
+houses %>% filter(PRICE < 1000000) %>% ggplot(aes(x = PRICE, fill = CITY)) + geom_histogram()
+
+houses %>% ggplot(aes(x = `SQUARE FEET`, 
+                      y = PRICE,
+                      color = `PROPERTY TYPE`)) + geom_point()
+
+```
+
+Here, we will fit a linear model to the data.
+
+```{r}
+houses %>% ggplot(aes(x = `SQUARE FEET`, y = PRICE)) +
+  geom_point() + geom_smooth(method = "lm")
+
+linear_model = lm(PRICE ~ `SQUARE FEET`, data = houses)
+summary(linear_model)
+
+residuals = residuals(linear_model)
+hist(residuals)
+```
+
+

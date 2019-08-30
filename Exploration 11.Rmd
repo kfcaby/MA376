@@ -1,0 +1,64 @@
+---
+title: "Exploration 11"
+author: "Kevin Cummiskey"
+date: "August 28, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE, message= FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+memory = read_csv(file = "MemLettersData.csv")
+```
+
+# Perform some data analysis.
+
+```{r, result = 'asis'}
+table = memory %>% group_by(group) %>% summarise(mean(letters),
+                                         sd(letters),
+                                         mean(sleep),
+                                         sd(sleep),
+                                         mean(caffeine),
+                                         n())
+kable(table)
+memory %>% ggplot(aes(x = group, y = letters)) + geom_boxplot()
+
+```
+
+# Assess confounding by sleep
+
+```{r}
+memory %>% ggplot(aes(x = group, y = sleep)) + geom_boxplot()
+```
+
+
+# Single Mean Model
+
+```{r}
+memory = memory %>% mutate(mean1 = mean(letters))
+memory = memory %>% mutate(residuals1 = letters - mean1)
+
+#Standard error of residuals
+memory %>% summarise(sd(residuals1))
+
+
+#Note this is also the same as:
+summary(lm(letters ~ 1, data = memory))
+
+```
+
+# Two Mean Model
+
+```{r}
+memory = memory %>% group_by(group) %>% mutate(mean2 = mean(letters))
+memory = memory %>% mutate(residuals2 = letters - mean2)
+
+#Standard error of residuals
+memory %>% group_by() %>% summarise(sd(residuals2))
+
+#Note this is also the same as:
+summary(lm(letters ~ group, data = memory))
+
+```
+
