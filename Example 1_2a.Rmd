@@ -2,7 +2,7 @@
 title: "Example 1_2"
 author: "Kevin Cummiskey"
 date: "August 29, 2019"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 ```{r setup, include=FALSE}

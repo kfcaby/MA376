@@ -1,1 +1,0 @@
-(choose(4,2)*choose(11,1))/choose(15,3)
