@@ -113,3 +113,32 @@ anova(model2)
     ## Residuals 46 55.958  1.2165                      
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Let's test for an association between scent exposure and rating
+
+*H*<sub>0</sub> : *μ*<sub>Scent</sub> − *μ*<sub>NoScent</sub> = 0
+
+*H*<sub>*a*</sub> : *μ*<sub>Scent</sub> − *μ*<sub>NoScent</sub> ≠ 0
+
+Randomization Test
+
+``` r
+sim.diff = c()
+m = 10000 #number of simulations
+for(i in 1:m){
+  sim.dat = odor %>% mutate(sim.condition = 
+                              sample(condition))
+  sim.scent = sim.dat %>% filter(sim.condition == "scent")
+  sim.noscent = sim.dat %>% filter(sim.condition == "noscent")
+  sim.diff[i] = mean(sim.scent$rating) - mean(sim.noscent$rating)
+}
+hist(sim.diff, breaks = 100)
+```
+
+![](Example_1_2a_files/figure-markdown_github/unnamed-chunk-4-1.png)
+
+``` r
+sum(sim.diff > 1.3)/m
+```
+
+    ## [1] 0

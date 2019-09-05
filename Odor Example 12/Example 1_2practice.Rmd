@@ -1,0 +1,73 @@
+---
+title: "Example 1_2practice"
+author: "Kevin Cummiskey"
+date: "September 4, 2019"
+output: rmarkdown::github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+odor = read.table(file = "OdorRatings.txt",
+                  header = T)
+```
+
+Let's look at the data:
+
+```{r}
+odor %>% ggplot(aes(x = condition, y = rating)) +
+  geom_boxplot()
+```
+
+Let's conduct some inference
+
+In words, we would want to test these hypotheses:
+
+$H_0$: There is no association between being exposed to the scent and the rating of the store.
+
+$H_a$: There is an association between being exposed to the scent and the rating of the store.
+
+First, let's do a randomization test
+
+```{r}
+#observed statistic
+odor %>% group_by(condition) %>% summarise(mean(rating), sd(rating))
+
+odor %>% group_by(condition) %>% summarise(mean(rating)) %>%
+  summarise(diff(`mean(rating)`))
+```
+
+Question: if there was no effect of scent, then how unusual would a difference of 1.3 in ratings be?
+
+We can assess this with a randomization test.
+
+```{r}
+#number of iterations to perform
+m = 10000
+sim.diff = c()
+sim.t = c()
+for(i in 1:m){
+  sim.dat = odor %>% mutate(sim.condition = sample(condition))
+  sim.scent =sim.dat %>% filter(sim.condition == "scent")
+  sim.noscent = sim.dat %>% filter(sim.condition == "noscent")
+  sim.diff[i] = mean(sim.scent$rating) - mean(sim.noscent$rating)
+  
+  sim.dat = sim.dat %>% group_by(sim.condition) %>% mutate(mean2 = mean(rating))
+  sim.dat = sim.dat %>% group_by() %>% mutate(residual = rating - mean2)
+  
+  sim.SEresiduals = sum(sim.dat$residual^2)/46
+  
+  sim.t[i] = sim.diff[i]/(sim.SEresiduals*sqrt(1/24 + 1/24))
+}
+
+hist(sim.diff, breaks = 100)
+
+hist(sim.t, breaks = 100)
+
+sum(sim.diff > 1.3)/m
+
+```
+
+
+
