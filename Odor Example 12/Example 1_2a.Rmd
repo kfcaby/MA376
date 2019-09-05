@@ -84,6 +84,7 @@ Randomization Test
 
 ```{r}
 sim.diff = c()
+r.squared = c()
 m = 10000 #number of simulations
 for(i in 1:m){
   sim.dat = odor %>% mutate(sim.condition = 
@@ -91,6 +92,10 @@ for(i in 1:m){
   sim.scent = sim.dat %>% filter(sim.condition == "scent")
   sim.noscent = sim.dat %>% filter(sim.condition == "noscent")
   sim.diff[i] = mean(sim.scent$rating) - mean(sim.noscent$rating)
+  
+  #inference on R^2
+  model = lm(rating ~ sim.condition, data = sim.dat)
+  r.squared[i] = summary(model)$r.squared
 }
 hist(sim.diff, breaks = 100)
 
