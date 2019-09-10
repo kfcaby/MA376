@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-fish = read.table(file = "http://www.isi-stats.com/isi2/data/FishOmega3.txt",
+diet = read.table(file = "http://www.isi-stats.com/isi2/data/FishOmega3.txt",
                   sep = "\t",
                   header = TRUE)
 
@@ -18,14 +18,14 @@ Let's perform some data analysis.
 
 ```{r}
 #descriptive statistics
-fish %>% group_by(fish) %>% summarise(mean(omega.3),
+diet %>% group_by(fish) %>% summarise(mean(omega.3),
                                       sd(omega.3),
                                       n())
 
-fish %>% ggplot(aes(y = omega.3)) + geom_boxplot()
-fish = fish %>% filter(omega.3 < 0.08)
+diet %>% ggplot(aes(y = omega.3)) + geom_boxplot()
+diet = diet %>% filter(omega.3 < 0.08)
 
-fish %>% ggplot(aes(x = fish, y = omega.3)) + geom_boxplot()
+diet %>% ggplot(aes(x = fish, y = omega.3)) + geom_boxplot()
 ```
 
 
@@ -34,13 +34,62 @@ Fit a single mean model
 \[y_{ij} = \mu + \epsilon_{ij}\]
 
 ```{r}
-fish = fish %>% mutate(mean1 = mean(omega.3))
-SST = sum((fish$omega.3-fish$mean1)^2)
+diet = diet %>% mutate(mean1 = mean(omega.3))
+SST = sum((diet$omega.3-diet$mean1)^2)
 ```
 
 Fit a separate means model
 
 \[y_{ij} = \mu_j + \epsilon_{ij}\]
+
+```{r}
+diet = diet %>% group_by(fish) %>% mutate(mean2 = mean(omega.3))
+
+#SSE
+SSE = sum((diet$omega.3 - diet$mean2)^2)
+
+#SSR
+SSR = SST - SSE
+
+#R^2
+R2 = SSR/SST
+
+#Fstat
+Fstat = (SSR/4)/(SSE/22)
+
+model = lm(omega.3 ~ fish, data = diet)
+anova(model)
+summary(model)
+
+```
+
+Inference on $R^2$. Simulation-based approach.
+
+3S Strategy
+
+```{r}
+m = 5000
+rsquared = c()
+fstat.sim = c()
+
+for(i in 1:m){
+  diet$sim.fish = sample(diet$fish)
+  diet = diet %>% group_by(sim.fish) %>% mutate(mean2.sim = mean(omega.3))
+  SSE.sim = sum((diet$omega.3 - diet$mean2.sim)^2)
+  rsquared[i] = 1-SSE.sim/SST
+  fstat.sim[i] = ((SST-SSE.sim)/4)/(SSE.sim/22)
+}
+
+hist(rsquared, breaks = 50)
+sum(rsquared > R2)/m
+
+hist(fstat.sim)
+x = seq(0,10,0.1)
+plot(x, df(x,4,22), type = "l")
+
+1 - pf(5.62, 4, 22)
+summary(model)
+```
 
 
 
