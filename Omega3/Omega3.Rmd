@@ -1,0 +1,47 @@
+---
+title: "Omega3"
+author: "Kevin Cummiskey"
+date: "September 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+fish = read.table(file = "http://www.isi-stats.com/isi2/data/FishOmega3.txt",
+                  sep = "\t",
+                  header = TRUE)
+
+```
+
+Let's perform some data analysis.
+
+```{r}
+#descriptive statistics
+fish %>% group_by(fish) %>% summarise(mean(omega.3),
+                                      sd(omega.3),
+                                      n())
+
+fish %>% ggplot(aes(y = omega.3)) + geom_boxplot()
+fish = fish %>% filter(omega.3 < 0.08)
+
+fish %>% ggplot(aes(x = fish, y = omega.3)) + geom_boxplot()
+```
+
+
+Fit a single mean model
+
+\[y_{ij} = \mu + \epsilon_{ij}\]
+
+```{r}
+fish = fish %>% mutate(mean1 = mean(omega.3))
+SST = sum((fish$omega.3-fish$mean1)^2)
+```
+
+Fit a separate means model
+
+\[y_{ij} = \mu_j + \epsilon_{ij}\]
+
+
+
+
