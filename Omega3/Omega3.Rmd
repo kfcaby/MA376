@@ -99,6 +99,28 @@ summary(model)
 ```
 
 
+Confidence and Prediction Intervals for the Group Means
+
+```{r}
+summary = diet %>%group_by(fish) %>% 
+  summarise(mean =mean(omega.3),
+            sd = sd(omega.3),
+            n = n(),
+            residuals2 = sum((omega.3-mean2)^2)
+                                                 )
+summary = summary %>% mutate(pooledSD = sqrt(sum(residuals2)/(27-5)))
+
+#calculate confidence interval
+summary = summary %>% mutate(LBmean = mean - qt(0.975,26)*pooledSD/sqrt(n))
+summary = summary %>% mutate(UBmean = mean + qt(0.975,26)*pooledSD/sqrt(n))
+
+#calculate prediction interval
+summary = summary %>% mutate(LBprediction = mean - qt(0.975,26)*pooledSD*sqrt(1+1/n))
+summary = summary %>% mutate(UBprediction = mean + qt(0.975,26)*pooledSD*sqrt(1+1/n))
+
+summary
+
+```
 
 
 
