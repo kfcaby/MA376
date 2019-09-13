@@ -56,6 +56,8 @@ R2 = SSR/SST
 
 #Fstat
 Fstat = (SSR/4)/(SSE/22)
+#Question: when is the Fstat big?
+
 
 model = lm(omega.3 ~ fish, data = diet)
 anova(model)
@@ -65,24 +67,29 @@ summary(model)
 
 Inference on $R^2$. Simulation-based approach.
 
-3S Strategy
+$H_0: \mu_{A} = \cdots = \mu_{E}$
+$H_a: \text{at least one of the means not equal to the others}$
+
 
 ```{r}
 m = 5000
-rsquared = c()
-fstat.sim = c()
+rsquared = c() #vector for simulated R2
+fstat.sim = c() #vector for simulated Fstat
 
+#Simulation
 for(i in 1:m){
-  diet$sim.fish = sample(diet$fish)
-  diet = diet %>% group_by(sim.fish) %>% mutate(mean2.sim = mean(omega.3))
-  SSE.sim = sum((diet$omega.3 - diet$mean2.sim)^2)
-  rsquared[i] = 1-SSE.sim/SST
-  fstat.sim[i] = ((SST-SSE.sim)/4)/(SSE.sim/22)
+  diet$sim.fish = sample(diet$fish) #shuffle fish categories
+  diet = diet %>% group_by(sim.fish) %>% mutate(mean2.sim = mean(omega.3)) #calculate new means
+  SSE.sim = sum((diet$omega.3 - diet$mean2.sim)^2) #calculate new SSE
+  rsquared[i] = 1-SSE.sim/SST #calculate new R2; Question: why don't we calculate SST everytime
+  fstat.sim[i] = ((SST-SSE.sim)/4)/(SSE.sim/22) #calculate Fstat
 }
 
+#Calculate p-value for R2 = 0.51
 hist(rsquared, breaks = 50)
 sum(rsquared > R2)/m
 
+#Calculate p-value for Fstat = 5.62
 hist(fstat.sim)
 x = seq(0,10,0.1)
 plot(x, df(x,4,22), type = "l")
@@ -90,6 +97,11 @@ plot(x, df(x,4,22), type = "l")
 1 - pf(5.62, 4, 22)
 summary(model)
 ```
+
+
+
+
+
 
 
 
