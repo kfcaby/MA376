@@ -122,6 +122,39 @@ summary
 
 ```
 
+Consider a one-sample t-test
+
+$H_0: \mu = 8$
+
+$H_a: \mu \neq 8$
+
+\[t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}\]
+
+```{r}
+power.t.test(n = 18, delta = 1, sd = 2, power = NULL, type = "one.sample", alternative = "two.sided")
+
+power.t.test(n = NULL, delta = 1, sd = 2, power = 0.80, type = "one.sample", alternative = "two.sided")
+
+```
+
+
+Now, let's consider our case:
+
+Cohen's F statistic
+
+\[f = \sqrt{\frac{R^2}{1-R^2}}\]
+
+```{r}
+library(pwr)
+
+R2 = 0.3
+#Cohen's f statistic
+f = sqrt(R2/(1-R2))
+
+pwr.anova.test(k = NULL, n = 10, f = f, power = 0.80)
+```
+
+
 
 
 
