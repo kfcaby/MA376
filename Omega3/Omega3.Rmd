@@ -122,6 +122,27 @@ summary
 
 ```
 
+
+```{r}
+f = 5
+dfModel = 5
+dfResidual = 35
+
+x = seq(0,10, by = 0.1)
+plot(x,df(x,dfModel, dfResidual))
+
+1 - pf(f,dfModel, dfResidual)
+
+n = 30
+x = seq(-5,5, by = 0.1)
+plot(x,dt(x,n-1))
+
+qt(0.975,n-1)
+
+#here is a change
+```
+
+
 Consider a one-sample t-test
 
 $H_0: \mu = 8$
