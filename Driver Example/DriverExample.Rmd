@@ -1,0 +1,103 @@
+---
+title: "DriversExample"
+author: "Kevin Cummiskey"
+date: "9/18/2019"
+output: rmarkdown::github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+drivers = read.table(file = "driverData",
+                     header = TRUE)
+
+head(drivers)
+
+# the gather command below converts from wide to long format
+drivers %>% 
+  gather(key = "condition", value = "time", -participant) %>%
+  ggplot(aes(x = condition, y = time)) + geom_boxplot()
+
+drivers = drivers %>% mutate(diff = Facebook - Instagram)
+
+drivers %>% ggplot(aes(y = diff)) + geom_boxplot()
+
+#Two sample t test - DON"T DO THIS
+t.test(drivers$Facebook, drivers$Instagram)
+
+#Paired t test
+t.test(drivers$Facebook, drivers$Instagram,
+       paired = TRUE)
+
+#This is equivalent to a one-sample test on the 
+# different in means.
+t.test(drivers$diff)
+```
+
+Here is the statistical model
+
+\[y_{ij} = \mu + \alpha_i + \beta_j + \epsilon_{ij}\]
+
+where $i$ is subject $i$ and $j = 1$ is Facebook and $j=2$ is Instagram.
+
+```{r}
+#Reshape data.frame to long format
+drivers_long = drivers %>% select(participant, Facebook, Instagram)%>% gather(key = "condition", value = "time", -participant)
+
+head(drivers_long)
+```
+
+```{r}
+#calculate SSE,SSR,SST by hand
+#Overall Mean
+drivers_long = drivers_long %>% mutate(mean1 = mean(time))
+#Media Effect
+drivers_long = drivers_long %>% group_by(condition) %>%
+  mutate(meanCondition = mean(time))
+drivers_long = drivers_long %>% group_by(condition) %>%
+  mutate(mediaEffect = meanCondition - mean1)
+#Person Effect
+drivers_long = drivers_long %>% group_by(participant) %>% 
+  mutate(meanPerson = mean(time))
+drivers_long = drivers_long %>% group_by(participant) %>% 
+  mutate(personEffect = mean(time) - mean1)
+#Prediction
+drivers_long = drivers_long %>% group_by(participant) %>% 
+  mutate(prediction = mean1 + mediaEffect + personEffect)
+#Residual
+drivers_long = drivers_long %>% group_by(participant) %>% 
+  mutate(residual = time - prediction)
+
+#Note these are the same in the text
+SSE = sum(drivers_long$residual^2)
+SST = sum((drivers_long$time - drivers_long$mean1)^2)
+SSmedia = sum((drivers_long$meanCondition - drivers_long$mean1)^2)
+SSperson = sum((drivers_long$meanPerson - drivers_long$mean1)^2)
+SSE
+SST
+SSmedia
+SSperson
+```
+
+
+```{r}
+#Instead of calculating with equation,
+#use the R linear model
+#The answers from anova will be the same as above
+drivers_long$participant = as.factor(drivers_long$participant)
+contrasts(drivers_long$participant) = contr.sum 
+drivers_long$condition = as.factor(drivers_long$condition) 
+contrasts(drivers_long$condition) = contr.sum 
+model = lm(time ~ condition + participant, data = drivers_long)
+summary(model)
+anova(model)
+
+```
+
+
+
+
