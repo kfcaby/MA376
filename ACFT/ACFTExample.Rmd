@@ -1,0 +1,99 @@
+---
+title: "ACFT"
+author: "Kevin Cummiskey"
+date: "September 23, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Read in the data and perform data analysis.
+
+
+```{r cars}
+acft = read_csv("https://raw.githubusercontent.com/nick3703/MA376/master/ACFT.csv")
+
+acft %>% ggplot(aes(x = Surface, y = Sled)) + geom_boxplot()
+
+```
+
+
+Fit a model for surface effect
+
+\[y_{ij} = \mu + \alpha_j + \epsilon_{ij}\]
+
+```{r}
+acft$Surface = factor(acft$Surface, levels = c("G","S","T"))
+contrasts(acft$Surface) = contr.sum
+single.lm = lm(Sled ~ Surface, data = acft)
+summary(single.lm)
+```
+
+
+Simulation based approach
+
+```{r}
+f.sim = c()
+m = 5000
+
+for(i in 1:m){
+  acft$Surface.sim = sample(acft$Surface)
+  sim.model = lm(Sled ~ Surface.sim, data = acft)
+  f.sim[i] = anova(sim.model)$"F value"[1]
+}
+
+hist(f.sim)
+```
+
+
+Now, let's look at person effects.
+
+```{r}
+summary = acft %>% group_by(Participant) %>% summarise(mean = mean(Sled))
+summary %>% ggplot(aes(x = Participant, y = mean)) + geom_point()
+```
+
+
+Let's fit a model that includes person effects
+
+\[y_{ij} = \mu + \alpha_j + \beta_i + \epsilon_{ij}\]
+
+```{r}
+adj.mod = lm(Sled ~ Surface + factor(Participant), data = acft)
+summary(adj.mod)
+anova(adj.mod)
+anova(single.lm)
+```
+
+Analysis 2 - revising the simulation to adjust for blocking
+
+Now, we only shuffle individuals time:
+
+```{r}
+f.adj = c()
+acft.mod = acft
+
+for(i in 1:m){
+  acft.mod = acft.mod %>% group_by(Participant) %>% sample_n(3)
+  acft.mod$shuffled.cat = rep(c("S","T","G"), 25)
+  shuff.lm = lm(Sled ~ shuffled.cat, data = acft.mod)
+  f.adj[i] = anova(shuff.lm)$"F value"[1]
+}
+
+hist(f.adj)
+hist(f.sim)
+
+
+```
+
+
+Analysis 3
+
+
+
+
+

@@ -139,8 +139,51 @@ plot(x,dt(x,n-1))
 
 qt(0.975,n-1)
 
-#here is a changeslkjlkjaf
 ```
+
+
+
+Power Analysis in R
+
+\[H_0: \mu = 8\]
+\[H_a: \mu \neq 8\]
+
+
+
+```{r}
+#we want to know the probability of rejecting
+# H_0 when mu actually equals 6
+
+power.t.test(n = 16, delta = 2, sd = 1, power = NULL,
+             type = "two.sample", 
+             alternative = "two.sided")
+power.t.test(n = NULL, delta = 2, sd = 1, power = 0.80,
+             type = "two.sample", 
+             alternative = "two.sided")
+power.t.test(n = NULL, delta = 0.5, sd = 1, power = 0.80,
+             type = "two.sample", 
+             alternative = "two.sided")
+
+install.packages('pwr')
+library(pwr)
+
+R2 = 0.3
+pwr.anova.test(k = 5, n = 6, f = sqrt(R2/(1-R2)),
+               power = NULL)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Consider a one-sample t-test

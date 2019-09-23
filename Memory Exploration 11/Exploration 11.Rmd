@@ -2,7 +2,7 @@
 title: "Exploration 11"
 author: "Kevin Cummiskey"
 date: "August 28, 2019"
-output: rmarkdown::github_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE, message= FALSE}
