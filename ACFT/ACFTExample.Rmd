@@ -31,6 +31,7 @@ acft$Surface = factor(acft$Surface, levels = c("G","S","T"))
 contrasts(acft$Surface) = contr.sum
 single.lm = lm(Sled ~ Surface, data = acft)
 summary(single.lm)
+anova(single.lm)
 ```
 
 
@@ -91,7 +92,26 @@ hist(f.sim)
 ```
 
 
-Analysis 3
+Analysis 3 - adjust each response for the block effect
+
+```{r}
+#calculate the block effect
+acft = acft %>% group_by() %>% mutate(mean_overall = mean(Sled))
+acft = acft %>% group_by(Participant) %>% mutate(mean_block = mean(Sled))
+acft = acft %>% group_by(Participant) %>% mutate(block_effect = mean_block - mean_overall)
+acft = acft %>% group_by() %>% mutate(Sled.adj = Sled - block_effect)
+
+acft %>% ggplot(aes(x = Surface, y = Sled.adj)) + geom_boxplot()
+
+acft %>% group_by(Surface) %>% summarise(mean = mean(Sled), sd = sd(Sled))
+acft %>% group_by(Surface) %>% summarise(mean = mean(Sled.adj), sd = sd(Sled.adj))
+
+adjusted.lm = lm(Sled.adj ~ Surface, data = acft)
+summary(adjusted.lm)
+anova(adjusted.lm)
+anova(single.lm)
+```
+
 
 
 
