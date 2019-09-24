@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
@@ -22,9 +21,13 @@ acft %>% ggplot(aes(x = Surface, y = Sled)) + geom_boxplot()
 ```
 
 
-Fit a model for surface effect
+# Analysis 1 - Fit a model for surface effect
 
 \[y_{ij} = \mu + \alpha_j + \epsilon_{ij}\]
+
+where $\alpha_j$ is the effect of surface $j$.
+
+This is a bad thing to do as our model assumes iid error, which is not the case because we have multiple measurements on each subject.
 
 ```{r}
 acft$Surface = factor(acft$Surface, levels = c("G","S","T"))
@@ -34,8 +37,10 @@ summary(single.lm)
 anova(single.lm)
 ```
 
+Note the large $p$-value for Surface 1.
 
-Simulation based approach
+
+# Simulation based approach for Analysis 1
 
 ```{r}
 f.sim = c()
@@ -63,14 +68,24 @@ Let's fit a model that includes person effects
 
 \[y_{ij} = \mu + \alpha_j + \beta_i + \epsilon_{ij}\]
 
+where $\alpha_j$ is the effect of surface $j$ and $\beta_i$ is the effect of person $i$ (also called the block effect).
+
 ```{r}
-adj.mod = lm(Sled ~ Surface + factor(Participant), data = acft)
+acft$Participant = factor(acft$Participant)
+contrasts(acft$Participant) = contr.sum
+
+#IMPORTANT - don't use factor in Partipant below
+# Doing so will reset the contrasts you set in contr.sum
+
+adj.mod = lm(Sled ~ Surface + Participant, data = acft)
 summary(adj.mod)
 anova(adj.mod)
-anova(single.lm)
+
 ```
 
-Analysis 2 - revising the simulation to adjust for blocking
+Note the smaller $p$-values after adjusting for block effects.
+
+# Analysis 2 - revising the simulation to adjust for blocking
 
 Now, we only shuffle individuals time:
 
@@ -99,13 +114,24 @@ Analysis 3 - adjust each response for the block effect
 acft = acft %>% group_by() %>% mutate(mean_overall = mean(Sled))
 acft = acft %>% group_by(Participant) %>% mutate(mean_block = mean(Sled))
 acft = acft %>% group_by(Participant) %>% mutate(block_effect = mean_block - mean_overall)
-acft = acft %>% group_by() %>% mutate(Sled.adj = Sled - block_effect)
 
+#calculate the adjusted sled time
+acft = acft %>% group_by() %>% mutate(Sled.adj = Sled - block_effect)
+```
+
+Compare the adjusted sled times to the original sled times.  Note they have the same means but different standard deviations.  We have adjusted for the between person variability.
+
+```{r}
+#Compare adjusted sled time to sled time
 acft %>% ggplot(aes(x = Surface, y = Sled.adj)) + geom_boxplot()
 
 acft %>% group_by(Surface) %>% summarise(mean = mean(Sled), sd = sd(Sled))
 acft %>% group_by(Surface) %>% summarise(mean = mean(Sled.adj), sd = sd(Sled.adj))
+```
 
+Fit a model for adjusted sled time with surface as a predictor.
+
+```{r}
 adjusted.lm = lm(Sled.adj ~ Surface, data = acft)
 summary(adjusted.lm)
 anova(adjusted.lm)
