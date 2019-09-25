@@ -1,0 +1,93 @@
+---
+title: "WageDiscrimination"
+author: "Kevin Cummiskey"
+date: "September 25, 2019"
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+Load data and perform data analysis
+```{r, message= FALSE, warning = FALSE}
+wages_whole = read.table("http://www.isi-stats.com/isi2/data/Wages.txt",
+                   header = TRUE)
+
+#Create new variable for binary education and filter unused observations
+wages = wages_whole %>% mutate(educ_bin = case_when(educ %in% c("HS","belowHS") ~ "belowCollege",
+                            educ == "beyondCollege" ~ "beyondCollege")) %>%
+  filter(!is.na(educ_bin))
+
+#scale wages to match text book
+wages$wage = wages$wage/100
+
+#Wages by race
+wages %>% ggplot(aes(x = race, y = wage)) + geom_boxplot()
+
+```
+
+
+Next, let's calculate the group effects (pg 174).
+
+```{r}
+#summary of wages by black vs nonblack
+summary.race = wages %>% group_by(race) %>% summarise(mean = mean(wage), sd = sd(wage), n = n())
+summary.race
+
+
+black = wages %>% filter(race == "black")
+nonblack = wages %>% filter(race == "nonblack")
+#group means
+mean(black$wage) 
+mean(nonblack$wage)
+
+#mean of the group means
+meanGroupMeans = (mean(black$wage) + mean(nonblack$wage))/2
+meanGroupMeans
+
+#group effects (black and nonblack)
+mean(black$wage) - meanGroupMeans
+mean(nonblack$wage) - meanGroupMeans
+
+#Alternatively, you could get these group effects this way.
+wages$race = factor(wages$race)
+contrasts(wages$race) = contr.sum
+race.lm = lm(wage ~ race, data = wages)
+summary(race.lm)
+anova(race.lm)
+```
+
+Next, let's consider another variable - education (p175). Calculate group effects of education level.
+
+```{r}
+#Wages by education level
+wages %>% ggplot(aes(x = educ_bin, y = wage)) + geom_boxplot()
+
+wages$educ_bin = factor(wages$educ_bin)
+contrasts(wages$educ_bin) = contr.sum
+educ.lm = lm(wage ~ educ_bin, data = wages)
+summary(educ.lm)
+anova(educ.lm)
+```
+
+
+Next, let's fit a two variable model (education and race). (p176)
+
+```{r}
+
+
+adj.lm = lm(wage ~ race + educ_bin, data = wages)
+summary(adj.lm)
+anova(adj.lm)
+
+#there are different ways to calculate 
+#anova tables
+# To match the text, install car package
+library(car)
+Anova(adj.lm,type=2)
+
+```
+

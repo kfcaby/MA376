@@ -2,7 +2,7 @@
 title: "ACFT"
 author: "Kevin Cummiskey"
 date: "September 23, 2019"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 ```{r setup, include=FALSE}
