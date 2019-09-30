@@ -1,0 +1,61 @@
+---
+title: "FloJo"
+author: "Kevin Cummiskey"
+date: "9/29/2019"
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Read in the data and perform basic data analysis
+
+```{r}
+cred = read.table(file = "http://www.isi-stats.com/isi2/data/CorporateCredibility.txt",
+                  header = TRUE)
+
+cred %>% group_by(Treatments) %>% summarise(mean(PI), sd(PI), n())
+cred %>% ggplot(aes(x = Treatments, y = PI)) + geom_boxplot()
+```
+
+One-variable analysis (p202) of purchase intent by treatment (this is not the best idea).
+
+1. You cannot answer the question in terms of the explanatory variables
+
+2. You unnecessarily lose degrees of freedom.
+
+```{r}
+cred$Endorser = factor(cred$Endorser)
+cred$CorpCred = factor(cred$CorpCred)
+contrasts(cred$Endorser) = contr.sum
+contrasts(cred$CorpCred) = contr.sum
+
+oneway.lm = lm(PI ~ Treatments, data = cred)
+summary(oneway.lm)
+anova(oneway.lm)
+
+```
+
+Fit a two-way ANOVA. Note the SS for CorpCred and SS for Endorser are the same as they would have been if we fit a one-way ANOVA for each of these variables.  This occurs because of the balanced design.
+
+```{r}
+twoway.lm = lm(PI ~ CorpCred + Endorser, data = cred)
+summary(twoway.lm)
+anova(twoway.lm)
+```
+
+Let's look at the residuals
+
+```{r}
+cred$residuals.twoway = residuals(twoway.lm)
+cred$fitted.twoway = fitted.values(twoway.lm)
+
+cred %>% ggplot(aes(x = residuals.twoway)) + geom_histogram()
+cred %>% ggplot(aes(x = fitted.twoway, y = residuals.twoway)) + geom_point()
+
+```
+
+
+
