@@ -1,0 +1,79 @@
+---
+title: "Example3.2"
+author: "Kevin Cummiskey"
+date: "10/3/2019"
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Load data and perform data analysis.
+
+```{r}
+nuts = read.table(file = "http://www.isi-stats.com/isi2/data/pistachioStudySubset.txt",
+                  header = TRUE)
+nuts$Temperature = factor(nuts$Temperature)
+nuts$AirVelocity = factor(nuts$AirVelocity)
+contrasts(nuts$Temperature) = contr.sum
+contrasts(nuts$AirVelocity) = contr.sum
+
+nuts = nuts %>% mutate(Treatment = paste(Temperature,"-",AirVelocity, 
+                                  sep = ""))
+
+summary = nuts %>% group_by(Temperature,AirVelocity) %>% 
+  summarise(meanP = mean(Peroxide), sd(Peroxide), n())
+summary
+nuts %>% ggplot(aes(x = Treatment, y = Peroxide)) +
+  geom_boxplot()
+```
+
+Let's fit the main effects model (p217)
+
+```{r}
+mainEffects = lm(Peroxide ~ Temperature + AirVelocity, data = nuts)
+summary(mainEffects)
+
+```
+
+
+How can we tell if there is an interaction? p(218)
+
+```{r}
+summary %>% ggplot(aes(x = Temperature, y = meanP, color = AirVelocity)) + 
+  geom_point() 
+```
+
+Testing for an interaction p219
+
+```{r}
+#Statistic - difference in differences
+diffdiff = (summary$meanP[1]-summary$meanP[2]) - (summary$meanP[3]-summary$meanP[4]) 
+
+#How extreme is this?
+m = 5000
+nuts.sim = nuts
+diffs.sim = c()
+for(i in 1:m){
+  nuts.sim$Peroxide.sim = sample(nuts.sim$Peroxide)
+  summary.sim = nuts.sim %>% 
+    group_by(Temperature,AirVelocity) %>%
+    summarise(meanP.sim = mean(Peroxide.sim))
+  diffs.sim[i] = (summary.sim$meanP.sim[1]-summary.sim$meanP.sim[2]) - (summary.sim$meanP.sim[3]-summary.sim$meanP.sim[4]) 
+}
+
+hist(diffs.sim)
+  
+```
+
+Let's fit the interaction model
+
+```{r}
+fullModel = lm(Peroxide ~ Temperature*AirVelocity, data = nuts)
+summary(fullModel)
+anova(fullModel)
+```
+
+
