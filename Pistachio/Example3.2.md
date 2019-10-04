@@ -3,8 +3,7 @@ Example3.2
 Kevin Cummiskey
 10/3/2019
 
-Load data and perform data
-analysis.
+Load data and perform data analysis.
 
 ``` r
 nuts = read.table(file = "http://www.isi-stats.com/isi2/data/pistachioStudySubset.txt",
@@ -16,14 +15,19 @@ contrasts(nuts$AirVelocity) = contr.sum
 
 nuts = nuts %>% mutate(Treatment = paste(Temperature,"-",AirVelocity, 
                                   sep = ""))
+```
 
+    ## Warning: The `printer` argument is deprecated as of rlang 0.3.0.
+    ## This warning is displayed once per session.
+
+``` r
 summary = nuts %>% group_by(Temperature,AirVelocity) %>% 
   summarise(meanP = mean(Peroxide), sd(Peroxide), n())
 summary
 ```
 
     ## # A tibble: 4 x 5
-    ## # Groups:   Temperature [2]
+    ## # Groups:   Temperature [?]
     ##   Temperature AirVelocity meanP `sd(Peroxide)` `n()`
     ##   <fct>       <fct>       <dbl>          <dbl> <int>
     ## 1 60          1.5          5.51          0.766     5
@@ -36,9 +40,11 @@ nuts %>% ggplot(aes(x = Treatment, y = Peroxide)) +
   geom_boxplot()
 ```
 
-![](Example3.2_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+![](Example3.2_files/figure-markdown_github/unnamed-chunk-1-1.png)
 
-Let’s fit the main effects model (p217)
+Let's fit the main effects model (p217).
+
+This is for a multifactor design without interactions.
 
 ``` r
 mainEffects = lm(Peroxide ~ Temperature + AirVelocity, data = nuts)
@@ -65,15 +71,14 @@ summary(mainEffects)
     ## Multiple R-squared:  0.5847, Adjusted R-squared:  0.5358 
     ## F-statistic: 11.97 on 2 and 17 DF,  p-value: 0.0005707
 
-How can we tell if there is an interaction?
-p(218)
+How can we tell if there is an interaction? p(218)
 
 ``` r
 summary %>% ggplot(aes(x = Temperature, y = meanP, color = AirVelocity)) + 
   geom_point() 
 ```
 
-![](Example3.2_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](Example3.2_files/figure-markdown_github/unnamed-chunk-3-1.png)
 
 Testing for an interaction p219
 
@@ -96,9 +101,9 @@ for(i in 1:m){
 hist(diffs.sim)
 ```
 
-![](Example3.2_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](Example3.2_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
-Let’s fit the interaction model
+Let's fit the interaction model
 
 ``` r
 fullModel = lm(Peroxide ~ Temperature*AirVelocity, data = nuts)
@@ -140,3 +145,33 @@ anova(fullModel)
     ## Residuals               16  8.3291  0.5206                      
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+nuts %>% mutate(predictionFull = predict(fullModel, nuts))
+```
+
+    ## Warning: contrasts dropped from factor Temperature
+
+    ## Warning: contrasts dropped from factor AirVelocity
+
+    ##    Peroxide Temperature AirVelocity Treatment predictionFull
+    ## 1      5.90          60         1.5    60-1.5          5.506
+    ## 2      6.27          60         1.5    60-1.5          5.506
+    ## 3      4.66          60         1.5    60-1.5          5.506
+    ## 4      2.09          60         2.5    60-2.5          2.936
+    ## 5      3.75          60         2.5    60-2.5          2.936
+    ## 6      2.64          60         2.5    60-2.5          2.936
+    ## 7      1.25          90         1.5    90-1.5          1.622
+    ## 8      1.05          90         1.5    90-1.5          1.622
+    ## 9      1.41          90         1.5    90-1.5          1.622
+    ## 10     1.78          90         2.5    90-2.5          2.290
+    ## 11     3.68          90         2.5    90-2.5          2.290
+    ## 12     1.39          90         2.5    90-2.5          2.290
+    ## 13     6.00          60         1.5    60-1.5          5.506
+    ## 14     4.70          60         1.5    60-1.5          5.506
+    ## 15     2.80          60         2.5    60-2.5          2.936
+    ## 16     3.40          60         2.5    60-2.5          2.936
+    ## 17     2.00          90         1.5    90-1.5          1.622
+    ## 18     2.40          90         1.5    90-1.5          1.622
+    ## 19     2.20          90         2.5    90-2.5          2.290
+    ## 20     2.40          90         2.5    90-2.5          2.290

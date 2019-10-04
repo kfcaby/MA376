@@ -30,7 +30,9 @@ nuts %>% ggplot(aes(x = Treatment, y = Peroxide)) +
   geom_boxplot()
 ```
 
-Let's fit the main effects model (p217)
+Let's fit the main effects model (p217).
+
+This is for a multifactor design without interactions.
 
 ```{r}
 mainEffects = lm(Peroxide ~ Temperature + AirVelocity, data = nuts)
@@ -74,6 +76,9 @@ Let's fit the interaction model
 fullModel = lm(Peroxide ~ Temperature*AirVelocity, data = nuts)
 summary(fullModel)
 anova(fullModel)
+
+nuts %>% mutate(predictionFull = predict(fullModel, nuts))
+
 ```
 
 
