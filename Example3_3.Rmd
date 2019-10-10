@@ -1,0 +1,36 @@
+---
+title: "Example3_3"
+author: "Kevin Cummiskey"
+date: "October 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+This model has no degrees of freedom left in the error. This is not a good thing!
+
+```{r}
+orange6 = read.table(file = "http://www.isi-stats.com/isi2/data/OJ-n6.txt",
+           header = TRUE)
+orange6$Brand = factor(orange6$Brand)
+contrasts(orange6$Brand) = contr.sum
+orange6$Temp = factor(orange6$Temp)
+contrasts(orange6$Temp) = contr.sum
+
+model6 = lm(VitC ~ Brand*Temp, data = orange6)
+summary(model6)
+anova(model6)
+```
+
+```{r}
+orange18 = read.table(file = "http://www.isi-stats.com/isi2/data/OJ-n18.txt",
+                      header = T)
+model18 = lm(VitC1000 ~ Brand*Temp, data = orange18)
+summary(model18)
+anova(model18)
+```
+
+One solution is replications.

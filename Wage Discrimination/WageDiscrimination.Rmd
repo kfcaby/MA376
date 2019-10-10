@@ -18,8 +18,7 @@ wages_whole = read.table("http://www.isi-stats.com/isi2/data/Wages.txt",
 
 #Create new variable for binary education and filter unused observations
 wages = wages_whole %>% mutate(educ_bin = case_when(educ %in% c("HS","belowHS") ~ "belowCollege",
-                            educ == "beyondCollege" ~ "beyondCollege")) %>%
-  filter(!is.na(educ_bin))
+                            educ == "beyondCollege" ~ "beyondCollege")) 
 
 #scale wages to match text book
 wages$wage = wages$wage/100
@@ -27,6 +26,10 @@ wages$wage = wages$wage/100
 #Wages by race
 wages %>% ggplot(aes(x = race, y = wage)) + geom_boxplot()
 
+wages$race = factor(wages$race)
+wages$educ = factor(wages$race)
+contrasts(wages$race) = contr.sum
+contrasts(wages$educ) = contr.sum
 ```
 
 
@@ -88,6 +91,22 @@ anova(adj.lm)
 # To match the text, install car package
 library(car)
 Anova(adj.lm,type=2)
+
+```
+
+
+```{r}
+summary = wages %>% group_by(race, educ) %>%
+  summarise(meanWage = mean(wage))
+
+wages$educ = factor(wages$educ, 
+                    levels = c("belowHS",
+                               "HS",
+                               "college",
+                               "beyondCollege"))
+
+summary %>% ggplot(aes(x = educ, y = meanWage, color = race)) +
+  geom_point()
 
 ```
 

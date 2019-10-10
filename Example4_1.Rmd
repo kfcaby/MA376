@@ -1,0 +1,83 @@
+---
+title: "Example4.1"
+author: "Kevin Cummiskey"
+date: "October 10, 2019"
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Read in data and perform data analysis.
+
+```{r}
+seeds = read.table(file = "http://www.isi-stats.com/isi2/data/Polyphenols.txt",
+                   header = T)
+seeds %>% ggplot(aes(x = Ethanol., y = PC )) + geom_point() +
+  geom_smooth(method = "lm")
+```
+
+Let's fit a seperate means model (One-way ANOVA). 
+
+\[y_{ij} = \mu + \alpha_j + \epsilon_{ij}\]
+
+for $\alpha_1 + \alpha_2 = 0$
+
+\[\epsilon_{ij} \sim \ \text{Normal}(0,\sigma^2)\]
+
+What assumptions does this model make about PC as ethanol increases?
+
+Note the 2 degrees of freedom in the model.
+
+```{r}
+#Convert Ethanol to a factor
+seeds$Ethanol_factor = factor(seeds$Ethanol.)
+contrasts(seeds$Ethanol_factor) = contr.sum
+
+modelANOVA = lm(PC ~ Ethanol_factor, data = seeds)
+summary(modelANOVA)
+anova(modelANOVA)
+```
+
+Next, let's fit a linear regression model.
+
+\[y_{ij} = \beta_0 + \beta_1 x_i + \epsilon_{ij}\]
+
+where $x_i$ is the ethanol level of the $i$th grape.
+
+What assumptions does this model make about PC as ethanol increases?
+
+How could you use linear regression to obtain same estimates as ANOVA?
+
+Note the 1 degree of freedom in the model.
+
+Which is better, 1 degree of freedom or 2? Why?
+
+```{r}
+modelLinear = lm(PC ~ Ethanol., data = seeds)
+summary(modelLinear)
+anova(modelLinear)
+```
+
+
+Simulation-based inference for the slope, $\beta_1$.
+
+```{r}
+#Observed statistic
+slope = coef(modelLinear)[2]
+slope.sim = c()
+m = 5000
+
+for(i in 1:m){
+  seeds$PC.sim = sample(seeds$PC)
+  modelLinear.sim = lm(PC.sim ~ Ethanol., data = seeds)
+  slope.sim[i] = coef(modelLinear.sim)[2]
+}
+
+hist(slope.sim)
+sum(abs(slope.sim)> slope)/m
+
+```
+ 
