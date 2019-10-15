@@ -1,0 +1,54 @@
+---
+title: "Example 4.1"
+author: "Kevin Cummiskey"
+date: "October 15, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+```
+
+```{r}
+chocolate = read.table(file = "http://www.isi-stats.com/isi2/data/MeltingTimes.txt", header = T, sep = "\t")
+
+chocolate_long = chocolate %>% gather(key = "type",
+                                      value = "seconds",-student)
+
+```
+
+
+
+
+```{r}
+grapes = read.table(file = "http://www.isi-stats.com/isi2/data/Polyphenols.txt", header = T)
+
+grapes %>% ggplot(aes(x = factor(Ethanol.), y = PC)) + geom_boxplot()
+
+```
+
+
+First, let's fit an ANOVA model. (One-way ANOVA). This allows for a separate mean for each ethanol level.
+
+```{r}
+grapes$Ethanol_cat = factor(grapes$Ethanol.)
+contrasts(grapes$Ethanol_cat) = contr.sum
+
+model_anova = lm(PC ~ Ethanol_cat, data = grapes)
+summary(model_anova)
+anova(model_anova)
+```
+
+
+Let's fit a regression model.  This model assumes the increase in PC is the same from 40 to 50 as from 50 to 60.
+
+```{r}
+model_regression = lm(PC ~ Ethanol., data = grapes)
+summary(model_regression)
+anova(model_regression)
+```
+
+
+
