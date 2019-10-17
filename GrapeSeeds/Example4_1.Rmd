@@ -2,53 +2,163 @@
 title: "Example 4.1"
 author: "Kevin Cummiskey"
 date: "October 15, 2019"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-
 ```
 
-```{r}
-chocolate = read.table(file = "http://www.isi-stats.com/isi2/data/MeltingTimes.txt", header = T, sep = "\t")
+# Example 4.1 Recovering Polyphenols (pg 272)
 
-chocolate_long = chocolate %>% gather(key = "type",
-                                      value = "seconds",-student)
+## Lesson 16 - Simple Linear Regression
 
-```
+Objectives:
 
+1. Describe association between two quantivative variables.
 
+2. Interpret least-squares regression models.
 
+3. Compare and contrast separate versus linear regression models.
+
+What is the observational unit? explanatory variable? response variable?
+
+\vspace{1in}
+
+What type of study is this?
+
+\vspace{1in}
 
 ```{r}
 grapes = read.table(file = "http://www.isi-stats.com/isi2/data/Polyphenols.txt", header = T)
-
-grapes %>% ggplot(aes(x = factor(Ethanol.), y = PC)) + geom_boxplot()
-
+grapes %>% ggplot(aes(x = Ethanol., y = PC)) + geom_point()
 ```
 
+Write a statistical model for a separate mean for each ethanol level.
 
-First, let's fit an ANOVA model. (One-way ANOVA). This allows for a separate mean for each ethanol level.
+<br><br><br>
+
+Fit the model.
 
 ```{r}
 grapes$Ethanol_cat = factor(grapes$Ethanol.)
 contrasts(grapes$Ethanol_cat) = contr.sum
-
 model_anova = lm(PC ~ Ethanol_cat, data = grapes)
 summary(model_anova)
 anova(model_anova)
 ```
 
+What would you conclude from this model?
 
-Let's fit a regression model.  This model assumes the increase in PC is the same from 40 to 50 as from 50 to 60.
+\vspace{1in}
+
+Instead, let's say we fit the following regression model:
+
+\[y_{i} = \beta_0 + \beta_1 x_i + \epsilon_{i}\]
+\[\epsilon_{ij} \sim \text{N}(0,\sigma^2)\]
+where $i = 1,\ldots,15$ is grape, $x_i$ is the ethanol concentration used on the $i$th grape, and $y_i$ is the PC of the $i$th grape.
+
+How is this model different that the ANOVA model?
+
+\vspace{1in}
+
+Let's fit a regression model.  
 
 ```{r}
 model_regression = lm(PC ~ Ethanol., data = grapes)
 summary(model_regression)
 anova(model_regression)
 ```
+
+What would you conclude from this output? What has changed from the ANOVA model?
+
+\vspace{1in}
+
+## Lesson 17 - Inference for Simple Linear Regression
+
+Objectives:
+
+1. Simulation-based inference for relationship between quantiative variables. 
+
+2. Theory-based approach for relationship between quantiative variables.
+
+3. Evaluate validity conditions for theory-based tests.
+
+Why do we want to conduct inference?
+
+\vspace{1in}
+
+
+Write the null and alternative hypothesis to test whether there is an association between ethanol concentration used and PC.
+
+\vspace{1in}
+
+### Simulation-based approach
+
+Describe how we would conduct a simulation to conduct this test.
+
+\vspace{1in}
+
+
+Let's conduct a simulation-based test (pg 291).
+
+```{r}
+m = 5000 #number of iterations
+slopes = c() # empty vector
+grapes.sim = grapes #copy of data
+
+for(i in 1:m){
+  grapes.sim$PC.sim = sample(grapes.sim$PC) #shuffle the response
+  model.sim = lm(PC.sim ~ Ethanol., data = grapes.sim) # fit model to shuffled data
+  slopes[i] = coef(model.sim)[2] # extract the slope from the model
+}
+```
+
+
+Here is a plot of the distribution of the simulated slopes:
+
+```{r}
+hist(slopes)
+```
+
+Here is the $p$-value:
+```{r}
+sum(slopes > coef(model_regression)[2])/m
+```
+
+What would we conclude?
+
+\vspace{1in}
+
+### Theory-based test
+
+The $p$-value is in the linear model object:
+```{r}
+summary(model_regression)
+```
+
+A $t$ confidence interval for the population slope $\beta_1$ is (pg295):
+
+\vspace{1in}
+
+```{r}
+b1 = summary(model_regression)$coefficients[2,1]
+se_b1 = summary(model_regression)$coefficients[2,2]
+tstar = qt(0.975,13)
+
+upper = b1 + tstar * se_b1
+lower = b1 - tstar * se_b1
+
+lower 
+upper
+
+# or you can just do
+confint(model_regression)
+```
+
+
+
 
 
 
