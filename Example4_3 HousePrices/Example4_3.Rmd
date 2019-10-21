@@ -1,0 +1,108 @@
+---
+title: "Example4_3"
+author: "Kevin Cummiskey"
+date: "October 18, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+Read in the data and perform data analysis.
+
+```{r, fig.height = 3}
+houses = read.table(file = "http://www.isi-stats.com/isi2/data/housing.txt",
+                    header = TRUE)
+head(houses)
+houses %>% ggplot(aes(x = sqft, y = price.1000, color = lake)) + geom_point() +
+  geom_smooth(method = "lm")
+```
+
+What are the observational units? explanatory variable(s)? outcome variable?
+
+\vspace{1in}
+
+What is the study design?
+
+\vspace{0.25in}
+
+Let's fit a simple linear regression model.
+
+\[y_i = \beta_0 + \beta_1 x_i + \epsilon_i \qquad \epsilon_i \sim N(0,\sigma^2)\]
+
+where $y_i$ is the price and $x_i$ is the size (sq ft) of house $i$. 
+
+```{r, warning=FALSE, message = FALSE, fig.height=3}
+model_simple = lm(price.1000 ~ sqft, data = houses)
+summary(model_simple)
+```
+
+What is the interpretation of $\beta_1$?
+
+\vspace{1in}
+
+Let's look at the residuals?
+
+```{r, fig.height = 3}
+houses = houses %>% mutate(residuals_simple = residuals(model_simple))
+houses %>% ggplot(aes(x = residuals_simple, fill = lake)) + geom_histogram()
+houses %>% ggplot(aes(x = sqft, y = residuals_simple, color = lake)) + geom_point()
+houses %>% ggplot(aes(x = lake, y = residuals_simple, color = lake)) + geom_point()
+``` 
+
+What do these residuals tell us?
+
+\vspace{1in}
+
+Next, let's consider a model including location.
+
+\[y_i = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i \qquad \epsilon_i \sim N(0,\sigma^2)\]
+
+where $y_i$ is the price of house $i$, $x_{1,i}$ is the size (sq ft) of house $i$, and $x_{2,i}$ is 1 if house $i$ is lakefront and is 0 otherwise. 
+
+$x_{2,i}$ is an indicator variable.  How else could we encode this variable?
+
+\vspace{0.5in}
+
+What assumptions does this model make?
+
+\vspace{2in}
+
+Let's fit the model.
+
+```{r}
+#Reverse coding of lake
+houses$lake = factor(houses$lake, levels = c("notlakefront",
+                                             "lakefront"))
+
+model_withLake = lm(price.1000 ~ sqft + lake, data = houses)
+summary(model_withLake)
+anova(model_withLake)
+```
+
+What is the interpretation of $\beta_1$?
+
+\vspace{1in}
+
+What conclusions would you make from this model?
+
+\vspace{1in}
+
+Let's look at the residuals.
+
+```{r, warning=FALSE}
+houses = houses %>% mutate(residuals_lake = residuals(model_withLake))
+houses = houses %>% mutate(fitted_lake = fitted(model_withLake))
+houses %>% ggplot(aes(x = fitted_lake, y = residuals_lake, color = lake)) + 
+  geom_point()
+```
+
+What do the residuals tell us?
+
+\vspace{1in}
+
+
+
