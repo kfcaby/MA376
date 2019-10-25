@@ -1,0 +1,95 @@
+---
+title: "Example4_4"
+author: "Kevin Cummiskey"
+date: "October 24, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+Recall in Example 4.3, we looked at the effect of house size on price after adjusting for location.  Here is the model:
+
+\[y_i = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i \qquad \epsilon_i \sim N(0,\sigma^2)\]
+
+where $y_i$ is the price of house $i$, $x_{1,i}$ is the size (sq ft) of house $i$, and $x_{2,i}$ is 1 if house $i$ is lakefront and is 0 otherwise. 
+
+What assumptions does this model make?
+
+\vspace{1in}
+
+How do we interpret $\beta_1$? $\beta_2$?
+
+\vspace{1in}
+
+```{r, fig.height = 3}
+houses = read.table(file = "http://www.isi-stats.com/isi2/data/housing.txt",
+                    header = TRUE)
+
+#Reverse coding of lake
+houses$lake = factor(houses$lake, levels = c("notlakefront",
+                                             "lakefront"))
+
+model_withLake = lm(price.1000 ~ sqft + lake, data = houses)
+summary(model_withLake)
+anova(model_withLake)
+```
+
+```{r, fig.height=3, warning=FALSE}
+#add fitted values and residuals to the data set
+houses = houses %>% mutate(fitted_wLake = fitted.values(model_withLake))
+houses = houses %>% mutate(residuals_wLake = residuals(model_withLake))
+
+houses %>% ggplot(aes(x = sqft, y = price.1000, color = lake)) + 
+  geom_point() +
+  geom_line(aes(y = fitted_wLake))
+```
+
+Let's take a look at the residuals vs the predicted (fitted) values.
+
+```{r, fig.height=3}
+houses %>% ggplot(aes(x = fitted_wLake, 
+                      y = residuals_wLake,
+                      color = lake)) +
+  geom_point() + geom_hline(yintercept = 0)
+```
+
+Do we see evidence of an interaction here?
+
+\vspace{1in}
+
+Let's look at a model with an interaction.
+
+\[y_i = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \beta_3 x_{1,i}x_{2,i} + \epsilon_i \qquad \epsilon_i \sim N(0,\sigma^2)\]
+
+How do we interpret $\beta_0$?$\beta_1$? $\beta_2$? $\beta_3$? $\beta_1 + \beta_3$?
+
+\vspace{1.5in}
+
+```{r, fig.height=3}
+houses %>% ggplot(aes(x = sqft, y = price.1000, color = lake)) +
+  geom_point() + geom_smooth(method = "lm")
+model_interaction = lm(price.1000 ~ sqft * lake, data = houses)
+summary(model_interaction)
+anova(model_interaction)
+```
+
+What would you conclude from these results? Your answer should include discussion of effect sizes, significance, and overall predictive capability of the model.
+
+\vspace{2in}
+
+The main effect of location is not significant.  Should we conclude there is no effect of location on price?
+
+\vspace{1in}
+
+Note: The ANOVA table from R will not match the textbook because there are different ways to calculate sums of squares when the data is unbalanced (as in observational studies). The textbook reports Type III ANOVA tables in this article \url{https://mcfromnz.wordpress.com/2011/03/02/anova-type-iiiiii-ss-explained/}
+
+For Type III ANOVA, you can use the \tt{car} package in R. Note the capital ``A" in the function below.
+
+```{r, warning=FALSE, message=FALSE}
+library(car)
+Anova(model_interaction, type = 3)
+```
