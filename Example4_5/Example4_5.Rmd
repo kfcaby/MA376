@@ -1,0 +1,66 @@
+---
+title: "Example4_5"
+author: "Kevin Cummiskey"
+date: "October 28, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+diamonds = read.table(file = "http://www.isi-stats.com/isi2/data/diamonds.txt",
+                      header = T)
+```
+
+# One variable analyses
+
+## Price vs Weight
+
+```{r, fig.height=3}
+diamonds %>% ggplot(aes(x = Carat, y = Price..1000s.)) +
+  geom_point() + geom_smooth(method = "lm", se = F)
+model_weight = lm(Price..1000s. ~ Carat, data = diamonds)
+summary(model_weight)
+anova(model_weight)
+```
+
+What would you conclude from this model?
+
+\vspace{1in}
+
+
+## Price vs clarity
+
+```{r, fig.height = 3}
+diamonds %>% ggplot(aes(x = Clarity, y = Price..1000s.)) +
+  geom_point()
+```
+
+How many indicator variables do we need?
+
+\vspace{0.25in}
+
+Here is the model:
+
+\[y_{i} = \beta_0 + \beta_1 VS1_i + \beta_2 VS2_i + \beta_3 VVS1 + \beta_4 VVS2 + 
+\epsilon_i \quad \epsilon_i \sim N(0,\sigma^2)\]
+
+What is the reference category?
+
+\vspace{0.25in}
+
+
+```{r}
+model_Clarity = lm(Price..1000s. ~ Clarity, data = diamonds)
+summary(model_Clarity)
+anova(model_Clarity)
+```
+
+What would you conclude from this model?
+
+\vspace{1in}
+
