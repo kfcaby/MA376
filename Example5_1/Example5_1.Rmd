@@ -1,0 +1,103 @@
+---
+title: "Example5_1"
+author: "Kevin Cummiskey"
+date: "10/29/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Review
+
+You are interested in whether the linear association between body weight and IOCT time differs by cadet class.  Given data, describe how you would perform an appropriate test. Please be specific on what models you would fit and the test statistic you would use.
+
+# Multiple Quantitative Explanatory Variables
+
+## Data Analysis
+
+```{r, fig.height=3, message=FALSE, warning=FALSE}
+nuts = read.table(file = "http://www.isi-stats.com/isi2/data/pistachioStudy.txt",
+                  header = T)
+library(GGally)
+library(plotly)
+nuts %>% select(Temperature, AirVelocity, Peroxide..remaining.) %>% ggpairs(lower = list(continuous = "smooth", se = F))
+#nuts %>% plot_ly(x = ~Temperature, y = ~AirVelocity, z = ~Peroxide..remaining.)
+```
+
+## Main Effects Model
+
+We fit the following model:
+
+\[y_i = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i \quad \epsilon_i \sim N(0, \sigma^2)\]
+
+where $y_i$ is the peroxide remaining (\%), $x_{1,i}$ is the Temperature (F), and $x_{2,i}$ is the AirVelocity (mph).
+
+How do we interpret the coefficients in the model?
+
+\vspace{0.5in}
+
+```{r}
+model_TempVel = lm(Peroxide..remaining. ~ Temperature + AirVelocity, data = nuts)
+summary(model_TempVel)
+```
+
+What do we conclude from these results? 
+
+\vspace{1in}
+
+How do the coefficients compare to the single variable models? Why?
+
+\vspace{0.5in}
+
+```{r}
+model_Temp = lm(Peroxide..remaining. ~ Temperature, data = nuts)
+summary(model_Temp)
+model_Vel = lm(Peroxide..remaining. ~ AirVelocity, data = nuts)
+summary(model_Vel)
+```
+
+Which variable is more important in explaining peroxide remaining?
+
+\vspace{0.5in}
+
+How do we standardize a varible? Why do we standardize variables?
+
+\vspace{0.5in}
+
+Model with standardized variables.
+
+```{r}
+#In our data set, the variables are already standardized.
+#If you needed to do it, you could use the scale function
+nuts = nuts %>% mutate(temp.std = scale(Temperature))
+
+model_std = lm(Peroxide..remaining. ~ std.temp + std.air, data = nuts)
+summary(model_std)
+```
+
+How have the coefficients changed? $p$-values? How do we interpret the intercept?
+
+\vspace{1in}
+
+Are the validity conditions met?
+
+\vspace{1in}
+
+Residuals vs Predicted Values
+
+```{r, fig.height=3}
+model_std %>% 
+  fortify() %>%
+  ggplot(aes(x = .fitted, y = .resid, color = factor(std.temp))) + 
+  geom_point()
+```
+
+## Model with Interactions
+
+
+
+
+
