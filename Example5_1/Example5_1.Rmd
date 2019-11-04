@@ -23,8 +23,9 @@ nuts = read.table(file = "http://www.isi-stats.com/isi2/data/pistachioStudy.txt"
                   header = T)
 library(GGally)
 library(plotly)
-nuts %>% select(Temperature, AirVelocity, Peroxide..remaining.) %>% ggpairs(lower = list(continuous = "smooth", se = F))
-#nuts %>% plot_ly(x = ~Temperature, y = ~AirVelocity, z = ~Peroxide..remaining.)
+nuts %>% select(Temperature, AirVelocity, Peroxide..remaining.) %>% 
+  ggpairs(lower = list(continuous = "smooth", se = F))
+nuts %>% plot_ly(x = ~Temperature, y = ~AirVelocity, z = ~Peroxide..remaining.)
 ```
 
 ## Main Effects Model
@@ -69,10 +70,10 @@ How do we standardize a varible? Why do we standardize variables?
 
 Model with standardized variables.
 
-```{r}
+```{r, warning=FALSE}
 #In our data set, the variables are already standardized.
 #If you needed to do it, you could use the scale function
-nuts = nuts %>% mutate(temp.std = scale(Temperature))
+#nuts = nuts %>% mutate(temp.std = scale(Temperature))
 
 model_std = lm(Peroxide..remaining. ~ std.temp + std.air, data = nuts)
 summary(model_std)
@@ -97,7 +98,49 @@ model_std %>%
 
 ## Model with Interactions
 
+Let's see if there is evidence of an interaction.
+
+```{r}
+nuts = nuts %>% mutate(interaction = std.temp * std.air)
+nuts %>% select(std.temp, std.air, interaction, Peroxide..remaining.) %>% 
+  ggpairs(lower = list(continuous = "smooth", se = F))
+```
 
 
+```{r}
+model_interaction = lm(Peroxide..remaining. ~ std.temp * std.air, 
+                       data = nuts)
+summary(model_interaction)
+```
 
+What research questions could we answer with these results?
+\vspace{0.5in}
+
+How do we interpret each coefficient?
+
+\vspace{1in}
+
+```{r, fig.height=3}
+model_interaction %>%
+  fortify() %>%
+  ggplot(aes(x = std.temp, y = Peroxide..remaining., color = factor(std.air))) +
+  geom_point() +
+  geom_line(aes(y = .fitted, group = factor(std.air)))
+
+model_interaction %>%
+  fortify() %>%
+  ggplot(aes(x = std.air, y = Peroxide..remaining., color = factor(std.temp))) +
+  geom_point() +
+  geom_line(aes(y = .fitted, group = factor(std.temp)))
+```
+
+Write the prediction equation for peroxide remaining for the following:
+\begin{itemize}
+  \item A pistachio nut dried with a standardized air velocity of -1.21.
+  \item A pistachio nut dried with a standardized air velocity of 1.21.
+  \item A pistachio nut dried with a standardized temperature of -1.21.
+  \item A pistachio nut dried with a standardized temperature of 1.21.
+\end{itemize}
+
+Briefly summarize your conclusions.
 

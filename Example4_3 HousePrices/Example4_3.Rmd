@@ -78,7 +78,7 @@ Let's fit the model.
 houses$lake = factor(houses$lake, levels = c("notlakefront",
                                              "lakefront"))
 
-model_withLake = lm(price.1000 ~ sqft + lake, data = houses)
+model_withLake = lm(price.1000 ~ sqft * lake, data = houses)
 summary(model_withLake)
 anova(model_withLake)
 ```
@@ -104,5 +104,12 @@ What do the residuals tell us?
 
 \vspace{1in}
 
+```{r}
+connor_data = data.frame(t = 0:7, percent = c(0.3,0.1,0.2,0.4,0.3,0.2,0.3,0.25), gender = rep(1,8))
 
+model = lm(percent ~ t, data = connor_data)
+summary(model)
+
+plot(t, percent, )
+```
 

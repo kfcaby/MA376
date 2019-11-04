@@ -1,0 +1,150 @@
+---
+title: "Section 5.2 Observational Studies with Multiple Quantitative Variables"
+author: "Kevin Cummiskey"
+date: "November 4, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Review
+
+Let's say you are interested in the effects of sleep and coffee consumption on academic performance.  You randomly assign cadets in a class to one of three sleep groups (3,5,7 hours) and coffee groups (0, 200, 400 mg) in a 3 x 3 factorial design and record their performance on a WPR.  Let $y_i$ be the WPR grade, $x_{1,i}$ be sleep in hours (standardized), and $x_{2,i}$ be the coffee consumption (standardized) of cadet $i$ . Consider the following model:
+
+\[y_i = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i \quad \epsilon_i \sim N(0, \sigma^2)\]
+
+\begin{enumerate}
+\item Why do we standardize explanatory variables?
+\item Interpret $\beta_0$.
+\item Will the adjusted and unadjusted effect of sleep on WPR performance be the same? Explain.
+\item Can we use this model to test whether the effect of sleep on WPR performance depends upon coffee consumption? Explain.
+\end{enumerate}
+
+# Example 5.2
+
+```{r, message=FALSE}
+library(tidyverse)
+brains = read.table(file = "http://www.isi-stats.com/isi2/data/BrainSize.txt",
+                    header = T)
+```
+
+## PIQ and Brain Size
+
+```{r, fig.height=3}
+brains %>% ggplot(aes(x = BrainSize, y = PIQ)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+model_unadjusted = lm(PIQ ~ BrainSize, data = brains)
+summary(model_unadjusted)
+```
+
+What conclusions should we draw from the unadjusted model?
+
+\vspace{2in}
+
+## Confounding by Height?
+
+```{r,fig.height=3, message=F}
+library(gridExtra)
+p1 = brains %>% ggplot(aes(x = BrainSize, y = Height)) + 
+  geom_point() + geom_smooth(method = "lm", se = F)
+p2 = brains %>% ggplot(aes(x = Height, y = PIQ)) + 
+  geom_point() + geom_smooth(method = "lm", se = F)
+grid.arrange(p1,p2, ncol = 2)
+```
+
+Is there evidence of confounding? How will adjusting for height change the effect of BrainSize on PIQ?
+
+\vspace{1in}
+
+Let's look at the height-adjusted PIQ.
+
+```{r, fig.height = 3, warning = FALSE}
+model_PIQheight = lm(PIQ ~ Height, data = brains)
+summary_PIQheight = model_PIQheight %>% fortify()
+
+#height-adjusted PIQ
+brains = brains %>% 
+  mutate(PIQ_height_adj = mean(PIQ) + summary_PIQheight$.resid)
+
+#plots on page 382
+# color scale
+sc = scale_color_distiller(palette = "Spectral", direction = 1) 
+
+p3 = brains %>% ggplot(aes(x = BrainSize, y = PIQ, color = Height)) +
+  geom_point() + ylim(65,155) + sc
+p4 = brains %>% ggplot(aes(x = BrainSize, y = PIQ_height_adj, color = Height)) +
+  geom_point() + ylim(65,155) + sc
+grid.arrange(p3,p4,ncol = 2)
+```
+
+How did we obtain height-adjusted PIQ? What happened to PIQ after adjusting for height?
+
+\vspace{1in}
+
+Let's look at height-adjusted brainsize.
+
+```{r, fig.height = 3}
+model_Brainheight = lm(BrainSize ~ Height, data = brains)
+summary_Brainheight = model_Brainheight %>% fortify()
+
+#height-adjusted PIQ
+brains = brains %>% 
+  mutate(BrainSize_height_adj = mean(BrainSize) + summary_Brainheight$.resid)
+
+#plots on page 382
+p5 = brains %>% ggplot(aes(x = BrainSize, y = PIQ, color = Height)) +
+  geom_point() + ylim(65,155) + sc
+p6 = brains %>% 
+  ggplot(aes(x = BrainSize_height_adj, y = PIQ_height_adj, color = Height)) +
+  geom_point() + 
+  ylim(65,155) +  
+  sc
+grid.arrange(p5,p6,ncol = 2)
+```
+
+How do we obtain height-adjusted BrainSize? 
+
+\vspace{1in}
+
+Let's look at an added variable plot predicting PIQ from BrainSize before (black line) and after (blue line) adjusting for height.
+
+```{r, fig.height=3}
+p6   + geom_smooth(method = "lm", se = FALSE) +
+  geom_abline(aes(slope = 0.1177, intercept = 4.66))
+```
+
+Let's fit the main effects model.
+
+```{r}
+model_height_brainsize = lm(PIQ ~ BrainSize + Height, data = brains)
+summary(model_height_brainsize)
+```
+
+What would we conclude from these results?
+
+\vspace{1in}
+
+## Interaction
+
+If we test for an interaction, what research question are we answering?
+
+\vspace{0.25in}
+
+Why should we standardize BrainSize and Height?
+
+```{r}
+brains = brains %>% mutate(std.BrainSize = scale(BrainSize),
+                           std.Height = scale(Height))
+model_interaction = lm(PIQ ~ std.BrainSize * std.Height,
+                       data = brains)
+summary(model_interaction)
+```
+
+What do we conclude from these results?
+
+\vspace{1in}
+
+
