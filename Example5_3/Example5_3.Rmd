@@ -1,0 +1,106 @@
+---
+title: "Modeling Nonlinear Associations"
+author: "Kevin Cummiskey"
+date: "November 6, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Review
+
+Explain a situation in which you would use the partial $F$-test.  As part of your answer, describe your research question, the variables you would collect, the models you would fit, and hypotheses you would test.
+
+\vspace{1.5in}
+
+# Example 5.3 Arctic Sea Ice
+
+The purpose of this analysis is to predict when there will be no sea ice in Artic Ocean.
+
+```{r, fig.height = 3, message = F, warning= F}
+library(gridExtra)
+ice = read.table(file = "http://www.isi-stats.com/isi2/data/ArticSeaIce.txt",
+                 header = T)
+model_linear = lm(SASIE_12 ~ Year12, data = ice)
+
+p1 = ice %>% ggplot(aes(x = Year12, y = SASIE_12)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = F, fullrange = T) + 
+  ylim(0,8) + 
+  xlim(1978, 2020)
+p2 = model_linear %>% fortify() %>%
+  ggplot(aes(x = .fitted, y = .resid)) + geom_point() +
+  geom_hline(yintercept = 0)
+grid.arrange(p1,p2, ncol = 2)
+```
+
+Is a linear model appropriate? What are the implications of choosing the wrong model?
+
+\vspace{0.75in}
+
+
+Let's fit the following model:
+
+\[y_i = \beta_0 + \beta_1 x_i + \beta_2 x_i^2 + \epsilon_i \quad \epsilon_i \sim N(0,\sigma^2)\]
+
+How do we interpret the coefficients?
+\vspace{1in}
+
+```{r}
+# Let's try to fit the model
+model_quadratic = lm(SASIE_12 ~ Year12 + I(Year12^2), data = ice)
+summary(model_quadratic)
+```
+
+What's unusual in the output?
+
+\vspace{1in}
+
+
+```{r}
+# Let's standardize year first
+ice = ice %>% mutate(std.year = (Year12-mean(Year12))/sd(Year12))
+model_std.quadratic = lm(SASIE_12 ~ std.year + I(std.year^2), data = ice)
+summary(model_std.quadratic)
+```
+
+Why do we need to standardize year first?
+
+\vspace{1in}
+
+```{r, message = F, warning = F, fig.height=3}
+ice = ice %>% left_join(model_std.quadratic %>% fortify())
+ice %>% ggplot(aes(x = Year12, y = SASIE_12)) + 
+  geom_point() + geom_smooth(method = "lm", se = F) +
+  geom_line(aes(y = .fitted), col = "red") + 
+  ylim(0,8) + 
+  xlim(1978,2020)
+```
+
+
+Let's look at the second-order term.
+
+```{r}
+anova(model_std.quadratic, model_linear)
+```
+
+What is the name of the test above?
+
+\vspace{0.25in}
+
+What hypotheses are being tested? 
+
+\vspace{0.25in}
+
+What do you conclude from this test?
+
+\vspace{1in}
+
+
+What year does each model predict there will be no more sea ice in the Arctic Ocean?
+\vspace{1in}
+
+

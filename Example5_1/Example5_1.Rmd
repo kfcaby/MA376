@@ -25,7 +25,7 @@ library(GGally)
 library(plotly)
 nuts %>% select(Temperature, AirVelocity, Peroxide..remaining.) %>% 
   ggpairs(lower = list(continuous = "smooth", se = F))
-nuts %>% plot_ly(x = ~Temperature, y = ~AirVelocity, z = ~Peroxide..remaining.)
+#nuts %>% plot_ly(x = ~Temperature, y = ~AirVelocity, z = ~Peroxide..remaining.)
 ```
 
 ## Main Effects Model

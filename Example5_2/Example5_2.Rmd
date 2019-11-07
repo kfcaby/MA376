@@ -131,9 +131,11 @@ What would we conclude from these results?
 
 If we test for an interaction, what research question are we answering?
 
-\vspace{0.25in}
+\vspace{0.5in}
 
 Why should we standardize BrainSize and Height?
+
+\vspace{0.5in}
 
 ```{r}
 brains = brains %>% mutate(std.BrainSize = scale(BrainSize),

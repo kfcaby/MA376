@@ -1,0 +1,16 @@
+---
+title: "IOCT"
+author: "Kevin Cummiskey"
+date: "November 5, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message = F}
+library(tidyverse)
+IOCT = read_csv(file = "IOCT_Data_Cleaned.csv")
+```
