@@ -1,0 +1,135 @@
+---
+title: "CarAcceleration"
+author: "Kevin Cummiskey"
+date: "November 12, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Smoking and Lung Function
+
+Today, we are going to investigate the relationship betweeen smoking and lung function in teenagers.  In the early 1980s, researchers recruited teenagers in South Boston to participate in a study on the health effects of smoking.  The data set  \texttt{teens} contains the age (years), height (inches), gender, forced expiratory volume - FEV (liters), and whether or not the subject smoked for 654 subjects in the study. FEV is the volume of air a person can exhale in a period of time and is a measure of lung function.
+
+
+```{r, message = F}
+library(tidyverse)
+teens = read.table(file = "http://www.isi-stats.com/isi2/data/FEV.txt",
+                   header = T)
+teens$Smoker = factor(teens$Smoker) #convert quantitative variable to categorical
+head(teens)
+```
+
+What would we expect the relationship to be between smoking and FEV?
+
+\vspace{0.5in}
+
+Let's see what the data says.
+
+```{r, fig.height=3}
+teens %>% ggplot(aes(x = Smoker, y = FEV)) + geom_boxplot()
+```
+
+What does the data say? 
+
+\vspace{1in}
+
+Here's a model:
+
+\[FEV_i = \beta_0 + \beta_1 Smoker_i + \epsilon_i \quad \epsilon_i \sim N(0, \sigma^2) \]
+
+where $FEV_i$ is the forced expiratory volume of subject $i$ and $Smoker_i$ is whether or not patient $i$ is a smoker.
+
+How do we interpret $\beta_0$, $\beta_1$?
+
+\vspace{1in}
+
+Let's fit the model. (Based on the boxplot above, what are reasonable estimates for $\beta_1$ and $\beta_0$?)
+
+```{r}
+model_smoker = lm(FEV ~ Smoker, data = teens)
+summary(model_smoker)
+```
+
+What would you conclude from this model? Comment on the size, direction, and strength of the effect of smoking on FEV. In addition, comment on the ability of the model to predict a subject's FEV.
+
+\vspace{1in}
+
+Based on this analysis, would you conclude smoking is good for lung function? Explain.
+
+\vspace{1in}
+
+In observational studies, if the goal is to assess the effect of one variable (smoking) on another variable (FEV), then we need to consider other variables associated with these two variables. List two other variables that may be associated with smoking and FEV.
+
+\vspace{0.25in}
+
+Let's look at age and its relationship to smoking and FEV.
+
+```{r, fig.height=3, message = F}
+library(gridExtra)
+p1 = teens %>% ggplot(aes(x = Smoker, y = Age)) + geom_boxplot()
+p2 = teens %>% ggplot(aes(x = Age, y = FEV)) + geom_point()
+grid.arrange(p1,p2, ncol = 2)
+```
+
+Is age associated with smoking and FEV? How do these associations explain the beneficial effect of smoking we observed above?
+
+\vspace{1in}
+
+Consider the following model:
+
+\[FEV_i = \alpha_0 + \alpha_1 Smoker_i + \alpha_2 Age_i +  \epsilon_i \quad \epsilon_i \sim N(0, \sigma^2) \]
+
+How do we interpret $\alpha_0$, $\alpha_1$, and $\alpha_2$? 
+
+\vspace{1in}
+
+How would we expect $\alpha_1$ to compare to $\beta_1$?
+
+\vspace{0.25in}
+
+Let's fit the model.
+
+```{r}
+model_smoker_age = lm(FEV ~ Smoker + Age, data = teens)
+summary(model_smoker_age)
+```
+
+What would you conclude from this model? Comment on the size, direction, and strength of the effect of smoking on FEV. In addition, comment on the ability of the model to predict a subject's FEV.
+
+\vspace{1in}
+
+What assumption does this model make about the relationship between smoking and FEV at each age?  See the plot below.
+
+\vspace{0.5in}
+
+```{r, fig.height = 2.5}
+model_smoker_age %>% 
+  fortify() %>%
+  ggplot(aes(x = Age, y = FEV, color = Smoker)) +
+  geom_point() +
+  geom_line(aes(y = .fitted, color = Smoker))
+```
+
+Lastly, let's check some of our model assumptions. Discuss what the plots below tell us about each assumption.
+
+```{r, fig.height=3, message = F}
+p3 = model_smoker_age %>%
+  fortify() %>%
+  ggplot(aes(x = .resid, fill = Smoker)) +
+  geom_histogram()
+p4 = model_smoker_age %>%
+  fortify() %>%
+  ggplot(aes(x = .fitted, y = .resid, color = Smoker)) +
+  geom_point()
+grid.arrange(p3,p4)
+```
+
+
+Write a paragraph summarizing the results of this analysis for a nonstatiscian friend.
+
+\vspace{2in}
+
+
