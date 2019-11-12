@@ -1,5 +1,5 @@
 ---
-title: "CarAcceleration"
+title: "FEV"
 author: "Kevin Cummiskey"
 date: "November 12, 2019"
 output: pdf_document
@@ -8,6 +8,8 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+You can find Rcode for this activity at \url{https://github.com/kfcaby/MA376/blob/master/FEV/FEV.pdf}
 
 # Smoking and Lung Function
 
