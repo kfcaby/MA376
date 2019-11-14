@@ -1,0 +1,141 @@
+---
+title: "RedSox2018"
+author: "Kevin Cummiskey"
+date: "November 14, 2019"
+output: pdf_document
+---
+
+# Chapter 6.1 Comparing Proportions
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+redsox = read_csv(file = "Red Sox Season")
+redsox = redsox %>% mutate(Result = factor(str_sub(`W/L`,start = 0, end = 1),
+                                           levels = c("W","L")))
+redsox = redsox %>% mutate(`Home/Away` = case_when(is.na(X5) ~ "Home",
+                                                   TRUE ~ "Away"))
+```
+
+
+
+\textbf{Question: Are the Red Sox better at Fenway Park?}
+
+Data for this activity is available at \url{https://www.baseball-reference.com/teams/BOS/2018-schedule-scores.shtml}
+
+
+```{r, message = F, result = 'asis'}
+head(redsox %>% select(`Gm#`,Tm,Opp,Result, `Home/Away`))
+summary = redsox %>% 
+  group_by(`Home/Away`)%>% 
+  count(Result) %>% 
+  spread(key = `Home/Away`, value = n)
+kable(summary, caption = "Results of the Red Sox 2018 Season")
+```
+
+## Measures of Association
+
+Calculate the \textit{conditional proportions} of wins at home and away. (other names: \textit{ chances, likelihood, risk}).
+
+\vspace{1in}
+
+Calculate the difference in conditional proportions (also called \textit{risk difference}).
+
+\vspace{1in}
+
+Calculate the relative risk for a win comparing home and away games. How does the risk difference and relative risk tell us something different?
+
+\vspace{1in}
+
+Calculate the odds of a win at home and away. What are the smallest and largest values the odds of an event can take? (see plot below)
+
+\vspace{1in}
+
+```{r, fig.height=2}
+measures = data.frame(prob = seq(0,1, by = 0.05))
+measures = measures %>% mutate(odds = prob/(1-prob))
+measures %>% ggplot(aes(x = prob, y = odds)) + 
+  geom_line() +
+  geom_line(aes(y = prob))
+```
+
+
+
+Calculate the odds ratio for wins comparing home and away games.  What are the smallest and largest values the odds ratio can take?  Let's say we take to log of the odds ratio - what are the smallest and largest values the log odds ratio can take?
+
+\vspace{1in}
+
+## Inference on Difference in Proportions
+
+What are the null and alternative hypotheses for this test?
+
+\vspace{1in}
+
+What is the statistic of interest for this test?
+
+\vspace{1in}
+
+### Theory-based test (two sample z-test)
+
+```{r}
+# two-sample z-test
+phat_home = 57/81
+phat_away = 51/81
+phat = 108/162
+#standardized statistic (pg 420)
+z = (phat_home - phat_away)/sqrt(phat*(1-phat)*(1/81 + 1/81))
+#p-value
+2*(1-pnorm(z,0,1))
+```
+
+### Theory-based test ($\chi^2$ test)
+
+Fill in the expected values in the table below if home/away has no effect and the Red Sox won 108 games. 
+
+|Result | Away| Home| Total|
+|:------|----:|----:|------|
+|W      |     |     |   108|
+|L      |     |     |    54|
+|Total  |   81|   81|   182|
+
+The $\chi^2$ test compares the observed counts in each cell to the expected counts.
+
+\[ X^2 = \sum_{\text{all cells}} \frac{(\text{observed} - \text{expected})^2}{\text{expected}}\]
+
+Calculate the $\chi^2$ statistic.
+
+```{r}
+redsox %>% 
+  group_by(`Home/Away`,Result) %>% 
+  count() %>% 
+  group_by(`Home/Away`) %>%
+  mutate(n.games = sum(n)) %>%
+  group_by(Result) %>%
+  mutate(overall_perc = n/sum(n))
+```
+
+### Simulation-based test
+
+```{r}
+redsox.sim = redsox %>% select(Result, `Home/Away`)
+riskDiff.sim = c()
+n.sims = 5000
+
+for(i in 1:n.sims){
+  summary.sim = redsox.sim %>% 
+    mutate(Result.sim = sample(Result)) %>% #shuffle wins
+    group_by(`Home/Away`) %>%
+    count(Result.sim) %>% mutate(p = n/sum(n)) #calculate win percentages
+  riskDiff.sim[i] = summary.sim$p[3]-summary.sim$p[1]
+}
+
+hist(riskDiff.sim)
+sum( abs(riskDiff.sim) > (phat_home - phat_away))/n.sims
+```
+
+What would we conclude from these tests?
+
+\vspace{1in}
+
+
