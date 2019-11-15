@@ -14,7 +14,7 @@ library(knitr)
 redsox = read_csv(file = "Red Sox Season")
 redsox = redsox %>% mutate(Result = factor(str_sub(`W/L`,start = 0, end = 1),
                                            levels = c("W","L")))
-redsox = redsox %>% mutate(`Home/Away` = case_when(is.na(X5) ~ "Home",
+redsox = redsox %>% mutate(Field = case_when(is.na(X5) ~ "Home",
                                                    TRUE ~ "Away"))
 ```
 
@@ -22,33 +22,33 @@ redsox = redsox %>% mutate(`Home/Away` = case_when(is.na(X5) ~ "Home",
 
 \textbf{Question: Are the Red Sox better at Fenway Park?}
 
-Data for this activity is available at \url{https://www.baseball-reference.com/teams/BOS/2018-schedule-scores.shtml}
+The data consists of results from 182 Red Sox games in the 2018 season.  Data for this activity is available at \url{https://www.baseball-reference.com/teams/BOS/2018-schedule-scores.shtml}
 
 
 ```{r, message = F, result = 'asis'}
-head(redsox %>% select(`Gm#`,Tm,Opp,Result, `Home/Away`))
+head(redsox %>% select(`Gm#`,Tm,Opp,Result, Field))
 summary = redsox %>% 
-  group_by(`Home/Away`)%>% 
+  group_by(Field)%>% 
   count(Result) %>% 
-  spread(key = `Home/Away`, value = n)
+  spread(key = Field, value = n)
 kable(summary, caption = "Results of the Red Sox 2018 Season")
 ```
 
 ## Measures of Association
 
-Calculate the \textit{conditional proportions} of wins at home and away. (other names: \textit{ chances, likelihood, risk}).
+Calculate the \textit{conditional proportions} of wins for home games and away games. (You will also hear conditional proportions referred to as \textit{chances, likelihood, risk}).
 
 \vspace{1in}
 
-Calculate the difference in conditional proportions (also called \textit{risk difference}).
+Calculate the difference in conditional proportions (also called \textit{risk difference}) comparing home games to away games.
 
 \vspace{1in}
 
-Calculate the relative risk for a win comparing home and away games. How does the risk difference and relative risk tell us something different?
+Calculate the \textit{relative risk} for a win comparing home and away games. How does the risk difference and relative risk tell us something different?
 
 \vspace{1in}
 
-Calculate the odds of a win at home and away. What are the smallest and largest values the odds of an event can take? (see plot below)
+Calculate the \textit{odds} of winning at home and away. What are the smallest and largest values the odds can take? (see plot below)
 
 \vspace{1in}
 
@@ -60,9 +60,7 @@ measures %>% ggplot(aes(x = prob, y = odds)) +
   geom_line(aes(y = prob))
 ```
 
-
-
-Calculate the odds ratio for wins comparing home and away games.  What are the smallest and largest values the odds ratio can take?  Let's say we take to log of the odds ratio - what are the smallest and largest values the log odds ratio can take?
+Calculate the \textit{odds ratio} for wins comparing home and away games.  What are the smallest and largest values the odds ratio can take?  Let's say we take to log of the odds ratio - what are the smallest and largest values the \textit{log odds ratio} can take?
 
 \vspace{1in}
 
@@ -106,26 +104,37 @@ The $\chi^2$ test compares the observed counts in each cell to the expected coun
 Calculate the $\chi^2$ statistic.
 
 ```{r}
-redsox %>% 
-  group_by(`Home/Away`,Result) %>% 
-  count() %>% 
-  group_by(`Home/Away`) %>%
-  mutate(n.games = sum(n)) %>%
-  group_by(Result) %>%
-  mutate(overall_perc = n/sum(n))
+#calculate overall win/loss percentage
+summary_overall = redsox %>% group_by(Result) %>%
+  count() %>% group_by() %>% mutate(perc = n/sum(n)) %>%
+  select(-n)
+#calculate expected wins
+summary_homeaway = redsox %>% 
+  group_by(Field,Result) %>%
+  count() %>%
+  left_join(summary_overall, by = "Result") %>%
+  group_by(Field) %>%
+  mutate(expected = perc*sum(n))
+summary_homeaway  
+
+#calculate chi-square statistic
+chisq = summary_homeaway %>% group_by() %>%
+  summarise(chisq = sum((n - expected)^2/expected))
+
+1- pchisq(chisq$chisq, 1)
 ```
 
 ### Simulation-based test
 
 ```{r}
-redsox.sim = redsox %>% select(Result, `Home/Away`)
+redsox.sim = redsox %>% select(Result, Field)
 riskDiff.sim = c()
 n.sims = 5000
 
 for(i in 1:n.sims){
   summary.sim = redsox.sim %>% 
     mutate(Result.sim = sample(Result)) %>% #shuffle wins
-    group_by(`Home/Away`) %>%
+    group_by(Field) %>%
     count(Result.sim) %>% mutate(p = n/sum(n)) #calculate win percentages
   riskDiff.sim[i] = summary.sim$p[3]-summary.sim$p[1]
 }
@@ -138,4 +147,37 @@ What would we conclude from these tests?
 
 \vspace{1in}
 
+Is confounding an issue in this analysis?  What variables might we want to control for in order to reduce confounding?
 
+\vspace{1in}
+
+\newpage
+
+## Intro to Logistic Regression
+
+Let $Y_i$ be whether or not the Red Sox win game $i$ such that $Y_i \sim \text{Bernoulli}(\pi_i)$ be the probability the Red Sox win game $i$.
+
+Here is our model:
+
+\[\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 \text{Field}_i \]
+
+where $\text{Field}_i$ is whether game $i$ was played on the home or away field.
+
+How do we interpret $\beta_0$, $\beta_1$? Why is there no $\epsilon_i$ in this model?
+
+\vspace{1in}
+
+Let's fit the model.
+
+```{r}
+#reverse factor levels for result
+#so win is 1 and loss is 0
+redsox$Result = factor(redsox$Result,
+                       levels = c("L","W"))
+model_homeaway = glm(Result ~ Field, 
+                     data = redsox, 
+                     family = "binomial")
+summary(model_homeaway)
+```
+
+Have we seen these estimates before?
