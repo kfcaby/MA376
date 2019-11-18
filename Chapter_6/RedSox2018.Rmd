@@ -126,7 +126,7 @@ chisq = summary_homeaway %>% group_by() %>%
 
 ### Simulation-based test
 
-```{r}
+```{r, fig.height=2}
 redsox.sim = redsox %>% select(Result, Field)
 riskDiff.sim = c()
 n.sims = 5000
@@ -151,7 +151,6 @@ Is confounding an issue in this analysis?  What variables might we want to contr
 
 \vspace{1in}
 
-\newpage
 
 ## Intro to Logistic Regression
 

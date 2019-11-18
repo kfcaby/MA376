@@ -1,0 +1,103 @@
+---
+title: "Intro to Logistic Regression"
+author: "Kevin Cummiskey"
+date: "November 18, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = FALSE}
+library(tidyverse)
+```
+
+# Section 6.2 Introduction to Logistic Regression
+
+## Review
+
+In the article ``The incidence of thyroid disorders in the community: A twenty-year follow-up of the Wickham survey" by Vanderpump et al., 443 of the 582 smokers and 502 of the 732 nonsmokers were still alive at the 20 year follow-up.  
+
+Calculate the odds ratio and logs odds ratio of being alive comparing smokers to nonsmokers.
+
+\vspace{0.5in}
+
+Perform the chi-square test to determine if there is a significant association between smoking and survival.  State the appropriate hypotheses and report the chi-square test statistic and $p$-value.
+
+\vspace{1in}
+
+Does your result above mean smoking raises the probability of being alive?
+
+\vspace{0.5in}
+
+## Useful log rules for this lesson
+
+- $e^{\ln r} = r$
+- $\ln (e^r) = r$
+- $e^r \times e^s = e^{r+s}$
+- $\ln\left(\frac{r}{s}\right) = \ln(r)-\ln(s)$
+
+
+## Introduction to Logistic Regression
+
+```{r, fig.height = 3}
+smoke = read.table(file = "smoke.csv", header = T, sep = ",")
+smoke$Alive = factor(smoke$Alive)
+smoke$Smoker = factor(smoke$Smoker)
+smoke %>% group_by(Smoker,Alive) %>% count() %>% spread(key = "Smoker",value = "n")
+smoke %>% ggplot(aes(x = Age, y = Smoker, color = Alive)) + geom_jitter(width = 2, height = 0.2) 
+```
+
+Based on the plot, is age a confounding variable of the association between smoking and survival? Explain.
+
+\vspace{1in}
+
+To demonstrate logistic regression, let's look at the relationship between survival and age.
+
+```{r, fig.height = 3}
+#Let's look at a plot of age vs proportion alive
+summary = smoke %>% count(Age, Alive) %>%
+  group_by(Age) %>%
+  mutate(Alive_proportion = n/sum(n),
+         total = sum(n)) %>%
+  filter(Alive == 1) %>% select(-c(Alive,n))
+
+summary %>%
+  ggplot(aes(x = Age, y = Alive_proportion)) +
+  geom_point()
+```
+
+Explain two reasons a linear model for age and alive proportion is not appropriate?
+
+\vspace{1in}
+
+Let's try a log odds (or \textit{logit}) transformation.
+
+```{r, fig.height=3}
+summary = summary %>% 
+  mutate(logOdds = log(Alive_proportion/(1-Alive_proportion)))
+summary %>% ggplot(aes(x = Age, y = logOdds)) +
+  geom_point()
+```
+
+Is a linear model on the log odds appropriate? How does the logit transformation ensure probabilities are between 0 and 1?
+
+\vspace{1in}
+
+Let's fit the following model.
+
+\[\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 \text{Age}_i \]
+
+How do we interpret $\beta_0$ and $\beta_1$? Would we expect $\beta_1$ to be positive or negative? Why is there no $\epsilon_i$ on this model?
+
+\vspace{1in}
+
+```{r}
+# In practice, we would just do this:
+model_age = glm(Alive ~ Age, data = smoke, family = "binomial")
+summary(model_age)
+```
+
+What would we conclude from these results?  
+
