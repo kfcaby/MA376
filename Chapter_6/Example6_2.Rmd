@@ -53,7 +53,7 @@ Based on the plot, is age a confounding variable of the association between smok
 
 \vspace{1in}
 
-To demonstrate logistic regression, let's look at the relationship between survival and age.
+### Let's look at the relationship between survival and age.
 
 ```{r, fig.height = 3}
 #Let's look at a plot of age vs proportion alive
@@ -99,5 +99,36 @@ model_age = glm(Alive ~ Age, data = smoke, family = "binomial")
 summary(model_age)
 ```
 
+What is the predicted odds ratio associated with a one-year increase in age?
+
+\vspace{0.25in}
+
+What is the predicted odds ratio associated with a ten-year increase in age?
+
+\vspace{0.25in}
+
+\textbf{Key idea: the slope of a logistic regression model indicates a multiplicative change in the odds.}
+
 What would we conclude from these results?  
 
+\vspace{1in}
+
+How do we find predicted probabilities of survival for each subject?
+
+\vspace{1in}
+
+```{r}
+summary_model = model_age %>% fortify()
+summary_model = summary_model %>% mutate(predicted_prob = exp(.fitted)/(1 + exp(.fitted)))
+```
+
+### Let's look at the relationship between smoking and survival
+
+```{r}
+model_smoker = glm(Alive ~ Smoker, data = smoke, family = "binomial")
+summary(model_smoker)
+```
+
+How do we interpret $\beta_0$ and $\beta_1$? Have we seen these values before?
+
+\vspace{1in}
