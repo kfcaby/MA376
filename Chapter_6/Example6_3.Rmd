@@ -8,7 +8,6 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-
 ```
 
 # Section 6.3 Multiple Logistic Regression
@@ -43,6 +42,8 @@ Why is it important to adjust for age in this analysis?
 
 \vspace{0.25in}
 
+### Unadjusted model
+
 Here is a plot of the unadjusted association between smoking and 20-year survival.
 
 ```{r, fig.height = 3}
@@ -64,9 +65,13 @@ model.crude = glm(Alive ~ Smoker, data = smoke, family = "binomial")
 summary(model.crude)
 ```
 
-Let's look at the survival of smokers versus nonsmokers with the same levels of age.
+### Model adjusting for age
 
-```{r}
+Describe a plot you could make to determine if there is a relationship between smoking and survival after adjusting for age.
+
+\vspace{0.5in}
+
+```{r, fig.height=3}
 summary2 = smoke %>% group_by(Age,Smoker, Alive) %>% 
   count() %>%  group_by(Age,Smoker) %>% mutate(prop.alive = n/sum(n)) %>%
   filter(Alive == 1) %>% select(Age,Smoker,prop.alive) 
@@ -85,7 +90,7 @@ Let's fit the following model where $Y_i \sim \text{Bernoulli}(\pi_i)$.
 
 where $x_{1,i}$ is smoker (1) or nonsmoker (0) and $x_{2,i}$ is the subject's age at the start of the study.
 
-```{r}
+```{r, message = FALSE}
 #remove older folks - no survivors 75 years or older.
 smoke_cleaned = smoke %>% filter(Age < 70)
 
@@ -99,5 +104,55 @@ Anova(model.age_adjusted, type = "III")
 How does the adjusted odds ratio compare to the unadjusted?
 
 \vspace{1in}
+
+How can we assess the fit of a logistic regression model?
+
+\vspace{1in}
+
+### Model Fit 1
+
+```{r}
+smoke_cleaned = smoke_cleaned %>% left_join(summary2)
+smoke_cleaned = smoke_cleaned %>% mutate(pred.alive = predict(model.age_adjusted, smoke_cleaned, type = "response"))
+cor(smoke_cleaned$prop.alive, smoke_cleaned$pred.alive)
+```
+
+### Model Fit 2
+
+```{r, fig.height=3}
+smoke_cleaned = smoke_cleaned %>% 
+  mutate(Alive.pred = factor(ifelse(pred.alive > 0.5,
+                                             1, 0)))
+smoke_cleaned = smoke_cleaned %>% 
+  mutate(correct.class = ifelse(Alive.pred == Alive,
+                                1,0))
+
+smoke_cleaned %>% ggplot(aes(x = pred.alive, 
+                             y = Alive, 
+                             color = factor(correct.class))) +
+  geom_jitter(height = 0.05, width = 0.025) + xlim(0,1.2) +
+  geom_vline(xintercept = 0.5)
+```
+
+```{r, message = FALSE}
+library(caret)
+confusionMatrix(data = smoke_cleaned$Alive.pred,
+                reference = smoke_cleaned$Alive)
+```
+
+### Model with interaction
+
+What research question(s) can we answer by fitting the model with an interaction?
+
+\vspace{1in}
+
+```{r}
+model.interaction = glm(Alive ~ Smoker*Age, 
+                        data = smoke_cleaned,
+                        family = "binomial")
+summary(model.interaction)
+```
+
+What would you conclude from this analysis?
 
 
