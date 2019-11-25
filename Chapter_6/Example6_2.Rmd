@@ -41,7 +41,7 @@ Does your result above mean smoking raises the probability of being alive?
 
 ## Introduction to Logistic Regression
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning=FALSE}
 smoke = read.table(file = "smoke.csv", header = T, sep = ",")
 smoke$Alive = factor(smoke$Alive)
 smoke$Smoker = factor(smoke$Smoker)

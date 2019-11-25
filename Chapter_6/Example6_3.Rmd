@@ -1,0 +1,103 @@
+---
+title: "Example6_3"
+author: "Kevin Cummiskey"
+date: "November 25, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+```
+
+# Section 6.3 Multiple Logistic Regression
+
+## Review 
+
+In the article ``The incidence of thyroid disorders in the community: A twenty-year follow-up of the Wickham survey" by Vanderpump et al., 443 of the 582 smokers and 502 of the 732 nonsmokers were still alive at the 20 year follow-up.
+
+Let $Y_i$ be 1 if subject $i$ survives 20 years and 0 if subject $i$ does not survive such that $Y_i \sim \text{Bernoulli}(\pi_i)$. Consider the following model:
+
+\[\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 x_i\]
+
+where $x_i$ equals 1 if subject $i$ is a smoker and 0 if subject $i$ is not a smoker.
+
+Interpret the following quantities and provide estimates based on the data.
+
+* $\beta_0$
+
+* $\exp(\beta_0)$
+
+* $\frac{\exp(\beta_0)}{1 + \exp(\beta_0)}$
+
+* $\beta_1$
+* $\exp(\beta_1)$
+* $\beta_0 + \beta_1$
+* $\exp(\beta_0 + \beta_1)$
+* $\frac{\exp(\beta_0 + \beta_1)}{1 + \exp(\beta_0 + \beta_1)}$
+
+## Multiple Logistic Regression
+
+Why is it important to adjust for age in this analysis?
+
+\vspace{0.25in}
+
+Here is a plot of the unadjusted association between smoking and 20-year survival.
+
+```{r, fig.height = 3}
+smoke = read.table(file = "smoke.csv", header = T, sep = ",")
+smoke$Alive = factor(smoke$Alive)
+smoke$Smoker = factor(smoke$Smoker)
+
+summary = smoke %>% group_by(Smoker, Alive) %>% 
+  count() %>%  group_by(Smoker) %>% mutate(prop = n/sum(n))
+
+summary %>% ggplot(aes(x = Smoker, y = prop, fill = Alive)) +
+  geom_col()
+```
+
+Let's fit the logistic regression model in the review. Confirm the model produces the same odds ratio as the sample statistics.
+
+```{r}
+model.crude = glm(Alive ~ Smoker, data = smoke, family = "binomial")
+summary(model.crude)
+```
+
+Let's look at the survival of smokers versus nonsmokers with the same levels of age.
+
+```{r}
+summary2 = smoke %>% group_by(Age,Smoker, Alive) %>% 
+  count() %>%  group_by(Age,Smoker) %>% mutate(prop.alive = n/sum(n)) %>%
+  filter(Alive == 1) %>% select(Age,Smoker,prop.alive) 
+
+summary2 %>% ggplot(aes(x = Age, y = prop.alive, color = Smoker)) +
+  geom_point()
+```
+
+Does it appear smokers or nonsmokers have a better odds of surviving for 20 years?
+
+\vspace{0.5in}
+
+Let's fit the following model where $Y_i \sim \text{Bernoulli}(\pi_i)$.
+
+\[\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i}\]
+
+where $x_{1,i}$ is smoker (1) or nonsmoker (0) and $x_{2,i}$ is the subject's age at the start of the study.
+
+```{r}
+#remove older folks - no survivors 75 years or older.
+smoke_cleaned = smoke %>% filter(Age < 70)
+
+model.age_adjusted = glm(Alive ~ Smoker + Age, data = smoke_cleaned, family = "binomial")
+summary(model.age_adjusted)
+
+library(car)
+Anova(model.age_adjusted, type = "III")
+```
+
+How does the adjusted odds ratio compare to the unadjusted?
+
+\vspace{1in}
+
+
