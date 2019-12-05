@@ -1,0 +1,156 @@
+---
+title: "Example7_2"
+author: "Kevin Cummiskey"
+date: "December 5, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+```
+
+## Review
+
+
+## Example 7.2 Predicting Real Estate Prices
+
+The goal of this analysis is to predict house prices in Holland, Michigan.  In general, what are some factors that predict home price?
+
+\vspace{1in}
+
+First, we are going to partition our data in a training set (2/3) and test set (1/3).  We will fit our model to the training set and assess its ability to predict prices in the test set. Why do we do this? What is this process called?
+
+\vspace{2in}
+
+```{r}
+#Model Training Data
+houses_train = read.table(file = "http://www.isi-stats.com/isi2/data/HomesDisc.csv",
+                          header = T, sep = ",")
+#Model Testing Data
+houses_test = read.table(file = "http://www.isi-stats.com/isi2/data/HomesValid.csv",
+                         header = T, sep = ",")
+```
+
+### Data Analysis
+
+There are a lot of variables here.  How should we preceed with data analysis?
+
+\vspace{1in}
+
+First, let's look at missingness.
+
+```{r, results='asis'}
+missing = houses_train %>% summarise_all(funs(round(sum(is.na(.))/n(),2)))
+kable(missing, caption = "Percent missing data by variable")
+```
+
+What should we do about the missing data?
+
+\vspace{0.5in}
+
+Next, let's check for outliers.
+
+```{r}
+#reshape data
+long = houses_train %>% gather("variable", "value", -c(ID))
+#standardize variables
+long = long %>% group_by(variable) %>% mutate(value_std = scale(value))
+long %>% ggplot(aes(x = variable, y = value_std)) + geom_boxplot()
+```
+
+Do we see any outliers? What should we do with them?
+
+\vspace{1in}
+
+Next, let's look at bivariate associations.
+
+```{r}
+library(GGally)
+houses_train %>% select(-ID) %>% ggpairs()
+```
+
+Which variables are most strongly associated with asking price? Are any of these associations nonlinear? 
+
+\vspace{1in}
+
+Are any of these variables associated with each other?
+
+\vspace{0.5in}
+
+### Variable Selection
+
+So, which variables do we want to use?
+
+\vspace{1in}
+
+```{r}
+model = lm(Asking_Price ~ Garage + Age + Bedrooms + log(Square_Feet) + Stories + Baths, data = houses_train)
+summary(model)
+```
+
+How well does our model predict on the training data?
+
+\vspace{1in}
+
+Here are some common methods used to automate the process:
+
+* Backwards elimination: put all variables in the model and then drop variables one-by-one using some criteria.
+
+* Forwards elimination: enter variables one-by-one using some criteria.
+
+* Best subsets: check all possible combinations for the best model.
+
+These methods are referred to as stepwise regression.
+
+Let's try one of these (backwards elimination) in R.
+
+```{r}
+library(caret)
+library(leaps)
+step.model = train(Asking_Price ~ . , 
+                   data = houses_train %>% 
+                     select(-c(ID,Lot_Size,Total_Rooms, Year)),
+                   method = "leapBackward")
+step.model$results
+
+summary(step.model$finalModel)
+```
+
+What is our best model? How does R define a model as the best?
+
+\vspace{1in}
+
+Now, let's see how this model performs on our test set.  Why do we want to do this again?
+
+```{r}
+houses_train = houses_train %>%
+  mutate(predicted = predict(step.model, newdata = houses_train))
+
+houses_test = houses_test %>%
+  mutate(predicted = predict(step.model, newdata = houses_test))
+
+houses_test %>% ggplot(aes(x = predicted, y = Asking_Price)) +
+  geom_point()
+```
+
+How can we quantify how good these predictions are?
+
+\vspace{1in}
+
+```{r}
+#mean squared error in testing set
+mean((houses_test$Asking_Price - houses_test$predicted)^2)
+
+#mean squared error in the training set
+mean((houses_train$Asking_Price - houses_train$predicted)^2)
+
+```
+
+What do these values tell us?
+
+\vspace{1in}
+
+
+
