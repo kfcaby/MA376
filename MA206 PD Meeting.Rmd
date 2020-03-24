@@ -1,0 +1,157 @@
+---
+title: "MA206 PD Meeting"
+author: "Kevin Cummiskey"
+date: "March 24, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Review
+
+In Chapter 4, we've been looking at housing prices in Michigan. Specifically, we have been assessing the relationship between house size (sqft) and price (in \$100,000s).
+
+\[\hat{price}_i = \beta_0 + \beta_1 sqft_i\]
+
+where $price_i$ is the price of house $i$ and $sqft_i$ is the size (sq ft) of house $i$. 
+
+```{r, fig.height = 3}
+houses = read.table(file = "http://www.isi-stats.com/isi2/data/housing.txt",
+                    header = TRUE)
+houses %>% 
+  ggplot(aes(x = sqft, y = price.1000)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              se = FALSE)
+
+model_simple <- lm(price.1000 ~ sqft, data = houses)
+summary(model_simple)
+```
+
+Based on this model, estimate the price per square foot. 
+
+\vspace{0.25in}
+
+Briefly explain why location (lake or nonlake) may be a confounding variable.
+
+\vspace{0.75in}
+
+We can adjust for a confounding variable by including it in a multiple regression model.  In this model, we estimate the price per square foot when we hold the location of the house constant.
+
+\[\hat{price}_i = \alpha_0 + \alpha_1 sqft_i + \alpha_2 lake_i\]
+
+where $price_i$ is the price of house $i$, $sqft_i$ is the size (sq ft) of house $i$, and $lake_i$ is 1 if house $i$ is lakefront and is 0 otherwise. 
+
+What assumptions does this model make?
+
+\vspace{1in}
+
+How do we interpret $\alpha_1$? $\alpha_2$?
+
+\vspace{1in}
+
+In general, when will $\alpha_1$ from this model equal $\beta_1$ in the simple model?
+
+\vspace{0.25in}
+
+```{r, fig.height = 3}
+#Reverse coding of lake so 1 is lake and 0 is not lake
+houses$lake = factor(houses$lake, levels = c("notlakefront",
+                                             "lakefront"))
+
+model_withLake = lm(price.1000 ~ sqft + lake, data = houses)
+
+houses %>% 
+  mutate(price.predict = predict(model_withLake, newdata = .),
+         residuals = price.1000 - price.predict) -> houses
+
+houses %>% 
+  ggplot(aes(x = sqft, y = price.predict, color = lake)) +
+  geom_line() +
+  geom_point(aes(y = price.1000))
+
+summary(model_withLake)
+```
+
+How did the estimate of the price per square footage change when we held location constant?
+
+\vspace{0.75in}
+
+Calculate the expected price of a 2500 sq ft house that is not on the lake front.
+
+\vspace{0.75in}
+
+Calculate the expected price of a 2500 sq ft house on the lake front.
+
+\vspace{0.75in}
+
+Let's take a look at the residuals vs the predicted (fitted) values.
+
+```{r, fig.height=3}
+houses %>% ggplot(aes(x = price.1000, 
+                      y = residuals,
+                      color = lake)) +
+  geom_point() + geom_hline(yintercept = 0)
+```
+
+Do we see evidence of an interaction here?
+
+\vspace{1in}
+
+## Two models
+
+If we suspect the price per square foot differs for lake front and nonlake front, we could fit two separate simple models.
+
+```{r, fig.height=3}
+houses %>% ggplot(aes(x = sqft, y = price.1000, color = lake)) +
+  geom_point() + geom_smooth(method = "lm")
+
+lake_model <- lm(price.1000 ~ sqft, data = houses %>% filter(lake == "lakefront"))
+coef(lake_model)
+
+nonlake_model <- lm(price.1000 ~ sqft, data = houses %>% filter(lake == "notlakefront"))
+coef(nonlake_model)
+```
+
+## Interactions
+
+Let's look at a model with an interaction.
+
+\[\hat{price}_i = \beta_0 + \beta_1 sqft_i + \beta_2 lake_i + \beta_3 sqft_ilake_i\]
+
+How do we interpret $\beta_1$? $\beta_2$? $\beta_3$? $\beta_1 + \beta_3$?
+
+\vspace{1.5in}
+
+```{r, fig.height=3}
+model_interaction = lm(price.1000 ~ sqft * lake, data = houses)
+summary(model_interaction)
+anova(model_interaction)
+```
+
+Write the equation for the price of a lake front house as a function of size.
+
+\vspace{0.5in}
+
+Write the equation for the price of a nonlake house as a function of size.
+
+\vspace{0.5in}
+
+How do these equations compare to the two models above? Why is the interaction model preferable?
+
+\vspace{0.5in}
+
+Is there evidence the price per square foot is different for lakefront and nonlakefront homes? How do you know?
+
+\vspace{1in}
+
+What would you conclude from these results? Your answer should include discussion of effect sizes, significance, and overall predictive capability of the model.
+
+\vspace{2in}
+
+The main effect of location is not significant in the model with an interaction.  Should we conclude the location of the house is not associated with price? Justify your answer.
+
+
