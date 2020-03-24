@@ -1,7 +1,7 @@
 ---
 title: "Example4_4"
 author: "Kevin Cummiskey"
-date: "October 24, 2019"
+date: "March 24, 2020"
 output: pdf_document
 ---
 
@@ -12,7 +12,7 @@ library(tidyverse)
 
 ## Review
 
-In Chapter 4, we've been looking at housing prices in Michigan. 
+In Chapter 4, we've been looking at housing prices in Michigan. Specifically, we been assessing the relationship between house size (sqft) and price (in \$100,000s).
 
 ```{r, fig.height = 3}
 houses = read.table(file = "http://www.isi-stats.com/isi2/data/housing.txt",
