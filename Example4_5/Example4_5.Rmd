@@ -1,5 +1,5 @@
 ---
-title: "Example4_5"
+title: "Chapter 4.5 - Multilevel Categorical Variables"
 author: "Kevin Cummiskey"
 date: "October 28, 2019"
 output: pdf_document
@@ -7,74 +7,101 @@ output: pdf_document
 
 # Review
 
-Let $y_i$ and $x_{1,i}$ be quantative variables and $x_{2,i}$ be a categorical variable with two levels.
+Let $y_i$ and $x_{1,i}$ be quantitative variables and $x_{2,i}$ be a categorical variable with two levels.
 
 Model 1: $y_i = \beta_0 + \beta_1x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$
 
-Model 1: $y_i = \alpha_0 + \alpha_1x_{1,i} + \alpha_2 x_{2,i} + \alpha_3 x_{1,i}x_{2,i} + \epsilon_i$
+Model 2: $y_i = \alpha_0 + \alpha_1x_{1,i} + \alpha_2 x_{2,i} + \alpha_3 x_{1,i}x_{2,i} + \epsilon_i$
 
 For each of the following tests, which model and parameter would you use?
 
 \begin{enumerate}
   \item There is a linear association between $x_{2}$ and y after adjusting for $x_1$.
   \item There is a linear association between $x_1$ and $y$ for subjects in the reference group of $x_2$.
-  \item There is a linear assocation between $x_1$ and $y$ for subjects not in the reference group of $x_2$.
+  \item There is a linear association between $x_1$ and $y$ for subjects not in the reference group of $x_2$.
   \item The effect of $x_1$ on $y$ differs by level of $x_2$.
 \end{enumerate}
 
-Why are we typically not interested in $\alpha_2$? 
+Let's say you fit Model 2 and you find $\alpha_2$ is not sign-ficant.  Should you conclude there is no association between $x_{2}$ and $y$? Explain.
 
-\vspace{0.5in}
+\vspace{1in}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
-# One variable analyses
+# Diamonds
+
+When buying a diamond, you focus on the 4 C's: cut, clarity, color, and carat (weight).  In this example, we will investigate the association between price, weight, and clarity.  There are five clarity categories (IV, VVS1, VVS2, VS1, VS2).
 
 ```{r}
 diamonds = read.table(file = "http://www.isi-stats.com/isi2/data/diamonds.txt",
                       header = T)
 ```
 
-
+# One variable analyses
 
 ## Price vs Weight
+
+Let $y_i$ be the price and $x_i$ be the weight (carats) of diamond $i$.  Write a linear model for price as a function of weight.
+
+\vspace{0.5in}
 
 ```{r, fig.height=3}
 diamonds %>% ggplot(aes(x = Carat, y = Price..1000s.)) +
   geom_point() + geom_smooth(method = "lm", se = F)
 model_weight = lm(Price..1000s. ~ Carat, data = diamonds)
+```
+
+Describe two interesting features of the plot above.
+
+\vspace{0.5in}
+
+```{r}
 summary(model_weight)
 anova(model_weight)
 ```
 
-What would you conclude from this model?
+How accurately does this model typically predict diamond price?
 
-\vspace{1in}
+\vspace{0.25in}
 
+Based on this model, what's a reasonable price per carat?
+
+\vspace{0.25in}
+
+Explain how confounding by clarity could occur in this scenario.
+
+\vspace{0.75in}
 
 ## Price vs clarity
 
+We can express models for clarity and price in different ways.  The models below are equivalent.
+
+Write a \underline{separate means} model for price and clarity. \vspace{0.25in}
+
+Write a model for price and clarity using \underline{effect encoding}. \vspace{0.25in}
+
+Write a model for price and clarity using \underline{indicator encoding}. \vspace{0.25in}
+
 ```{r, fig.height = 3}
+#reorder the levels from highest to lowest clarity
+diamonds <- diamonds %>% 
+  mutate(Clarity = factor(Clarity, 
+                          levels = c("IF", "VVS1", "VVS2", "VS1", "VS2"))) 
+#summary statistics
+diamonds %>% 
+  group_by(Clarity) %>% 
+  summarize(mean = mean(Price..1000s.),
+            sd = sd(Price..1000s.),
+            n = n())
+#plot
 diamonds %>% ggplot(aes(x = Clarity, y = Price..1000s.)) +
   geom_point()
 ```
 
-How many indicator variables do we need?
-
-\vspace{0.25in}
-
-Here is the model:
-
-\[y_{i} = \beta_0 + \beta_1 VS1_i + \beta_2 VS2_i + \beta_3 VVS1 + \beta_4 VVS2 + 
-\epsilon_i \quad \epsilon_i \sim N(0,\sigma^2)\]
-
-What is the reference category?
-
-\vspace{0.25in}
-
+Let's move forward using indicator encoding. Let's fit the model.
 
 ```{r}
 model_Clarity = lm(Price..1000s. ~ Clarity, data = diamonds)
@@ -82,18 +109,41 @@ summary(model_Clarity)
 anova(model_Clarity)
 ```
 
-What would you conclude from this model? Why are all the clarity coefficients negative?
+What is the predicted price for an IF diamond?
+
+\vspace{0.25in}
+
+How accurately does this model typically predict diamond price?
+
+\vspace{0.25in}
+
+Using the results above, find estimates of the parameters in the effect encoding model.
 
 \vspace{1in}
 
+### Weight vs. Carat
+
+The last thing we might want to look at before proceeding to the two-variable analysis is the relationship between clarity and weight.  For time sakes, we'll just look at the means.
+
+```{r}
+diamonds %>% 
+  group_by(Clarity) %>% 
+  summarize(mean = mean(Carat),
+            sd = sd(Carat),
+            n = n())
+```
+
 # Two variable analysis
 
-## Are there differences in price across clarity categories after adjusting for weight?
+In this section, we want to:
 
-Here is the model:
+* Estimate the price per carat after adjusting for clarity.
 
-\[y_{i} = \beta_0 + \beta_1 Carat_i + \beta_2 VS1_i + \beta_3 VS2_i + \beta_4 VVS1 + \beta_5 VVS2 + 
-\epsilon_i \quad \epsilon_i \sim N(0,\sigma^2)\]
+* Determine whether the clarity is associated with price after adjusting for diamond weight.
+
+Using indicator encoding, write a model for price as a function of weight and clarity.
+
+\vspace{1in}
 
 ```{r}
 model_ClarityWeight = lm(Price..1000s. ~ Carat + Clarity, data = diamonds)
@@ -101,13 +151,17 @@ summary(model_ClarityWeight)
 anova(model_ClarityWeight)
 ```
 
-How have the coefficients changed from the one-variable models?
+Based on this model, what's a reasonable price per carat? Has it changed much after adjusting for clarity?
 
 \vspace{1in}
+
+How much does clarity improve your predictions of price?
+
+\vspace{0.5in}
 
 Write out the regression equations for the five categories of clarity. What is the relationship among these regression lines?
 
-\vspace{1in}
+\vspace{2in}
 
 ```{r, fig.height=3, warning=F}
 diamonds = diamonds %>% 
@@ -134,11 +188,16 @@ What do the $p$-values of the indicator variable coefficients tell us?
 
 \vspace{0.5in}
 
-## Does the price increase associated diamond weight differ across clarity categories?
+# Interaction
 
-$H_0:$ There is no interaction between clarity and price, after adjusting for diamond weight and diamond clarity.
+Write a research question we could answer by including the interaction between clarity and weight.
 
-$H_a:$ There is an interaction between clarity and price, after adjusting for diamond weight and diamond clarity.
+\vspace{2in}
+
+
+$H_0:$ There is no interaction between clarity and weight.
+
+$H_a:$ There is an interaction between clarity and weight.
 
 ```{r, fig.height=3}
 model_interaction = lm(Price..1000s. ~ Carat*Clarity, data = diamonds)
