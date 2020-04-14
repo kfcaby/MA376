@@ -1,32 +1,99 @@
 ---
 title: "RedSox2018"
 author: "Kevin Cummiskey"
-date: "November 14, 2019"
+date: "April 16, 2020"
 output: pdf_document
 ---
 
-# Chapter 6.1 Comparing Proportions
+# Chapter 6.1 Comparing Proportions - Are the Red Sox better at Fenway Park?
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(knitr)
-redsox = read_csv(file = "Red Sox Season")
-redsox = redsox %>% mutate(Result = factor(str_sub(`W/L`,start = 0, end = 1),
-                                           levels = c("W","L")))
-redsox = redsox %>% mutate(Field = case_when(is.na(X5) ~ "Home",
-                                                   TRUE ~ "Away"))
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+#library(tidyverse)
+#library(knitr)
+#redsox = read_csv(file = "Red Sox Season.csv")
+#redsox = redsox %>% mutate(Result = factor(str_sub(`W/L`,start = 0, end = 1),
+#                                           levels = c("W","L")))
+#redsox = redsox %>% mutate(Field = case_when(is.na(X5) ~ "Home",
+#                                                   TRUE ~ "Away"))
 ```
 
+I'm a huge Boston Red Sox fan. Today we are going to investigate: *Are the Red Sox better at Fenway Park?*   
 
+\includegraphics[height = 2in]{IMG_2128.jpeg}
 
-\textbf{Question: Are the Red Sox better at Fenway Park?}
+## Background
 
-The data consists of results from 182 Red Sox games in the 2018 season.  Data for this activity is available at \url{https://www.baseball-reference.com/teams/BOS/2018-schedule-scores.shtml}
+The Major League Baseball season consists of 162 games.  Each team plays 81 games at home and 81 games on the road. The Red Sox play their home games at Fenway Park.
 
+Let's consider the 2018 Red Sox (*why?*).  You can find more baseball data than you could ever analyze at www.retrosheet.org.  For today, we are going to use 2018 Retrosheet game logs.  This data set contains one row for each game (2,431 total) played in the 2018 season with over 150 variables recorded for each game.
+
+## Get data from Retrosheet.org
+
+If you want to follow along in R, go to https://www.retrosheet.org/gamelogs/index.html, download the 2018 file, unzip the file, and move it to your working directory in R. You can then run the code below.
+
+```{r}
+library(tidyverse)
+library(knitr)
+
+#---------------get retrosheet game log data---------------------#
+
+website = "https://raw.githubusercontent.com/maxtoki/baseball_R/"
+file = "master/data/game_log_header.csv"
+glheaders <- read_csv(file = paste(website,file, sep = ""))
+gamelogs2018 <- read_csv("GL2018.TXT",
+                   col_names = names(glheaders),
+                   na = character())
+
+#Here is a small sample of the data.
+gamelogs2018 %>% 
+  select(Date, VisitingTeam, VisitorRunsScored, HomeTeam, HomeRunsScore) %>% 
+  head(10) 
+```
+
+## Data Wrangling
+
+Let's do a little data wrangling.
+
+```{r}
+#  Add a variable called WinningTeam.
+gamelogs2018 %>% 
+  mutate(WinningTeam = case_when(HomeRunsScore > VisitorRunsScored ~ 
+                                   HomeTeam,
+                                 VisitorRunsScored > HomeRunsScore ~
+                                   VisitingTeam)) -> gamelogs2018
+
+# Let's look at only games the Red Sox were involved in.
+gamelogs2018 %>% 
+  filter(HomeTeam == "BOS" | VisitingTeam == "BOS" ) -> redsox
+
+# add Result (W/L) and Field (Home/Away) variables
+redsox %>% 
+  mutate(Result = ifelse(WinningTeam == "BOS", "W","L"),
+         Field = ifelse(HomeTeam == "BOS", "Home", "Away")) -> redsox
+
+# view sample of the redsox data frame.
+redsox %>% 
+  select(Date, VisitingTeam, VisitorRunsScored, HomeTeam, HomeRunsScore, Result, Field) %>% 
+  head(10) %>% 
+  kable(caption = "First 10 games of the Red Sox 2018 season")
+```
+
+## Study Design
+
+Recall our research question: *Are the Red Sox better at Fenway Park?*  In other words, is there an association between playing at Fenway Park and the Red Sox winning?
+
+What are the explanatory and response variables? Categorize each as categorical or quantitative.
+
+\vspace{1in}
+
+How does this study differ from simple linear regression and two-sample $t$-tests?
+
+\vspace{1in}
 
 ```{r, message = F, result = 'asis'}
-head(redsox %>% select(`Gm#`,Tm,Opp,Result, Field))
 summary = redsox %>% 
   group_by(Field)%>% 
   count(Result) %>% 
@@ -34,39 +101,60 @@ summary = redsox %>%
 kable(summary, caption = "Results of the Red Sox 2018 Season")
 ```
 
-## Measures of Association
 
 Calculate the \textit{conditional proportions} of wins for home games and away games. (You will also hear conditional proportions referred to as \textit{chances, likelihood, risk}).
 
 \vspace{1in}
 
-Calculate the difference in conditional proportions (also called \textit{risk difference}) comparing home games to away games.
+Calculate the \textit{odds} of winning at home and away. 
 
 \vspace{1in}
 
-Calculate the \textit{relative risk} for a win comparing home and away games. How does the risk difference and relative risk tell us something different?
-
-\vspace{1in}
-
-Calculate the \textit{odds} of winning at home and away. What are the smallest and largest values the odds can take? (see plot below)
+Describe the relationship between odds and probabilty. The graph below might help.
 
 \vspace{1in}
 
 ```{r, fig.height=2}
-measures = data.frame(prob = seq(0,1, by = 0.05))
+measures = data.frame(prob = seq(0,.90, by = 0.001))
 measures = measures %>% mutate(odds = prob/(1-prob))
 measures %>% ggplot(aes(x = prob, y = odds)) + 
   geom_line() +
   geom_line(aes(y = prob))
 ```
 
-Calculate the \textit{odds ratio} for wins comparing home and away games.  What are the smallest and largest values the odds ratio can take?  Let's say we take to log of the odds ratio - what are the smallest and largest values the \textit{log odds ratio} can take?
+## Measures of Association
+
+Next, we will calculate various measures of association between playing at Fenway Park and winning.  We will discuss four measures of association: *risk difference, relative risk, odds ratio, log odds ratio*.
+
+* Calculate the difference in conditional proportions (also called \textit{risk difference}) comparing home games to away games.
 
 \vspace{1in}
 
+* Calculate the \textit{relative risk} for a win comparing home and away games. How does the risk difference and relative risk tell us something different?
+
+\vspace{1in}
+
+* Calculate the \textit{odds ratio} for wins comparing home and away games.  
+
+\vspace{1in}
+
+* Calculate the \textit{log odds ratio} for winning comparing home and away games. 
+
+\vspace{1in}
+
+For each measure of association above, describe the range of possible values.
+
+* Risk difference
+
+* Relative risk
+
+* Odds ratio
+
+* Log odds ratio
+
 ## Inference on Difference in Proportions
 
-What are the null and alternative hypotheses for this test?
+Write the null and alternative hypotheses for this test.
 
 \vspace{1in}
 
@@ -75,6 +163,10 @@ What is the statistic of interest for this test?
 \vspace{1in}
 
 ### Theory-based test (two sample z-test)
+
+\[z = \frac{\hat{p}_1 - \hat{p_2}}{\hat{p}(1-\hat{p})\left(\frac{1}{n_1} + \frac{1}{n_2}\right)}\]
+
+Given a sufficiently large sample, $z$ is approximately standard normal under the null hypothesis.
 
 ```{r}
 # two-sample z-test
@@ -126,7 +218,11 @@ chisq = summary_homeaway %>% group_by() %>%
 
 ### Simulation-based test
 
-```{r, fig.height=2}
+Let's say I gave you 162 playing cards (one for each game) consisting of 81 red cards (home games) and 81 blue cards (away games).  Explain how you could conduct a simulation-based test with these cards.
+
+\vspace{1in}
+
+```{r, fig.height=3}
 redsox.sim = redsox %>% select(Result, Field)
 riskDiff.sim = c()
 n.sims = 5000
@@ -139,20 +235,22 @@ for(i in 1:n.sims){
   riskDiff.sim[i] = summary.sim$p[3]-summary.sim$p[1]
 }
 
-hist(riskDiff.sim)
-sum( abs(riskDiff.sim) > (phat_home - phat_away))/n.sims
+hist(riskDiff.sim, breaks = 50)
+sum(abs(riskDiff.sim) > (phat_home - phat_away))/n.sims
 ```
 
 What would we conclude from these tests?
 
 \vspace{1in}
 
-Is confounding an issue in this analysis?  What variables might we want to control for in order to reduce confounding?
+Is confounding an issue in this analysis?  List variables that are potential confounding variables of the association between playing at Fenway Park and winning.
 
 \vspace{1in}
 
 
 ## Intro to Logistic Regression
+
+Here, we are going to repeat the analysis above using logistic regression.  For this case, the results will be the same (*why?*).  However, when we introduce more complex models, we cannot use the methods above -- we have to use logistic regression.
 
 Let $Y_i$ be whether or not the Red Sox win game $i$ such that $Y_i \sim \text{Bernoulli}(\pi_i)$ be the probability the Red Sox win game $i$.
 
