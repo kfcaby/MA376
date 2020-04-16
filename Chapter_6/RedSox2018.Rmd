@@ -72,7 +72,13 @@ gamelogs2018 %>%
 # add Result (W/L) and Field (Home/Away) variables
 redsox %>% 
   mutate(Result = ifelse(WinningTeam == "BOS", "W","L"),
-         Field = ifelse(HomeTeam == "BOS", "Home", "Away")) -> redsox
+         Field = ifelse(HomeTeam == "BOS", "Home", "Away"),
+         RedSoxRunsScored = ifelse(HomeTeam == "BOS",
+                                   HomeRunsScore,
+                                   VisitorRunsScored),
+         RedSoxStartingPitcherName = ifelse(HomeTeam == "BOS",
+                                            HomeStartingPitcherName,
+                                            VisitorStartingPitcherName)) -> redsox
 
 # view sample of the redsox data frame.
 redsox %>% 
@@ -164,7 +170,7 @@ What is the statistic of interest for this test?
 
 ### Theory-based test (two sample z-test)
 
-\[z = \frac{\hat{p}_1 - \hat{p_2}}{\hat{p}(1-\hat{p})\left(\frac{1}{n_1} + \frac{1}{n_2}\right)}\]
+\[z = \frac{\hat{p}_1 - \hat{p_2}}{\sqrt{\hat{p}(1-\hat{p})\left(\frac{1}{n_1} + \frac{1}{n_2}\right)}}\]
 
 Given a sufficiently large sample, $z$ is approximately standard normal under the null hypothesis.
 
@@ -222,7 +228,7 @@ Let's say I gave you 162 playing cards (one for each game) consisting of 81 red 
 
 \vspace{1in}
 
-```{r, fig.height=3}
+```{r, fig.height=3, cache = TRUE}
 redsox.sim = redsox %>% select(Result, Field)
 riskDiff.sim = c()
 n.sims = 5000
@@ -256,15 +262,43 @@ Let $Y_i$ be whether or not the Red Sox win game $i$ such that $Y_i \sim \text{B
 
 Here is our model:
 
-\[\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 \text{Field}_i \]
+\begin{equation}
+\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 \text{Field}_i
+\label{eq:model}
+\end{equation}
 
 where $\text{Field}_i$ is whether game $i$ was played on the home or away field.
 
-How do we interpret $\beta_0$, $\beta_1$? Why is there no $\epsilon_i$ in this model?
+Describe $\pi_i$ in words.
 
 \vspace{1in}
 
-Let's fit the model.
+Solve Equation \ref{eq:model} for $\pi_i$.
+
+\vspace{1in}
+
+What is another name for the left side of Equation \ref{eq:model}? 
+
+\vspace{1in}
+
+In regression models, we include a random error term ($\epsilon$) in the linear model.  Equation \ref{eq:model} does **not** have a random error term.  *Why?*
+
+\vspace{1in}
+
+According the the model, what are the log odds of the Red Sox winning on the road?
+
+\vspace{1in}
+
+According to the model, what are the log odds ofthe Red Sox winning at Fenway Park?
+
+\vspace{1in}
+
+How do we interpret $\beta_1$ in the model?
+
+\vspace{1in}
+
+What values of $\beta_1$ would indicate the Red Sox are more likely to win at Fenway Park then on the road?
+
 
 ```{r}
 #reverse factor levels for result
@@ -277,4 +311,121 @@ model_homeaway = glm(Result ~ Field,
 summary(model_homeaway)
 ```
 
+Report estimates of the following:
+
+* log odds ratio for winning comparing games at Fenway Park to road games.
+
+* odds ratio for winning comparing games at Fenway Park to road games.
+
+* probability of the Red Sox winning on the road.
+
+* probability of the Red Sox winning at Fenway Park.
+
 Have we seen these estimates before?
+
+\vspace{1in}
+
+What would we conclude from these results?
+
+\vspace{1in}
+
+## Runs Scored and Red Sox winning
+
+In this section, we will investigate: *how does scoring affect the Red Sox's probability of winning?*.
+
+What are the explanatory and response variables? Categorize each as categorical or quantitative.
+
+\vspace{1in}
+
+How does this study differ from the investigation of home/away and winning?
+
+\vspace{1in}
+
+Consider the following model: let $Y_i$ be whether or not the Red Sox win game $i$ such that $Y_i \sim \text{Bernoulli}(\pi_i)$ be the probability the Red Sox win game $i$.
+
+Here is our model:
+
+\begin{equation}
+\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 \text{RunsScored}_i
+\label{eq:modelRuns}
+\end{equation}
+
+where $\text{RunsScored}_i$ is the number of runs the Red Sox scored in game $i$.
+
+According to the model, what are the log odds of a Red Sox win if they score 5 runs? 4 runs?
+
+\vspace{1in}
+
+According to the model, what is the probability the Red Sox win if they score 5 runs?
+
+\vspace{1in}
+
+
+How do we interpret $\beta_1$? $\beta_0$?
+
+\vspace{1in}
+
+Let's fit the model.
+
+```{r}
+#restrict analysis to between 1 and 10 runs scored
+model.runsScored <- glm(Result == "W" ~ RedSoxRunsScored, 
+                        family = "binomial",
+                        data = redsox)
+summary(model.runsScored)
+```
+
+Estimate the log odds of a Red Sox win if they score 5 runs? 4 runs?
+
+\vspace{1in}
+
+Estimate the probability the Red Sox win if they score 5 runs?
+
+\vspace{1in}
+
+
+```{r}
+winProbs = tibble(RedSoxRunsScored = 0:15)
+winProbs %>% mutate(pred.win.perc = predict(model.runsScored, 
+                                          newdata = winProbs,
+                                          type = "response")) -> winProbs
+winProbs
+```
+
+What do we conclude based on this model?
+
+\vspace{1in}
+
+Let's investigate this model further.  This model says that the log odds of a Red Sox win are linear in Red Sox runs scored.  In other words, the log odds increase linearly with runs scored.  Let's see if that's actually the case in the data.
+
+
+```{r, fig.height=2}
+#calculate log odds by runs scored
+redsox %>% 
+  group_by(RedSoxRunsScored) %>% 
+  summarize(Wins = sum(Result == "W"),
+            Games = n()) %>% 
+  mutate(perc = Wins/Games,
+         logOdds = log(perc/(1 - perc))) -> runs.summary
+
+runs.summary %>% head(10)
+
+# a plot of the log odds
+runs.summary %>% 
+  ggplot(aes(x = RedSoxRunsScored,
+             y = logOdds)) +
+  geom_point() +
+  labs(y = "log odds of a Red Sox win")
+```
+
+Is a linear model for the log odds appropriate?
+
+\vspace{1in}
+
+If the logs odds are linear in runs scored, are the odds linear in runs scored?
+
+\vspace{1in}
+
+Let's combine the above analyses to answer some other questions.
+
+
