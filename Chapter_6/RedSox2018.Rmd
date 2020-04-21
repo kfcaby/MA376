@@ -174,6 +174,8 @@ What is the statistic of interest for this test?
 
 Given a sufficiently large sample, $z$ is approximately standard normal under the null hypothesis.
 
+<br />
+
 ```{r}
 # two-sample z-test
 phat_home = 57/81
@@ -399,7 +401,7 @@ What do we conclude based on this model?
 Let's investigate this model further.  This model says that the log odds of a Red Sox win are linear in Red Sox runs scored.  In other words, the log odds increase linearly with runs scored.  Let's see if that's actually the case in the data.
 
 
-```{r, fig.height=2}
+```{r, fig.height=3}
 #calculate log odds by runs scored
 redsox %>% 
   group_by(RedSoxRunsScored) %>% 
@@ -426,6 +428,140 @@ If the logs odds are linear in runs scored, are the odds linear in runs scored?
 
 \vspace{1in}
 
-Let's combine the above analyses to answer some other questions.
+## Which pitcher is most likely to result in a Red Sox win?
+
+Let's look at the Red Sox record by starting pitcher.
+
+```{r}
+redsox %>% 
+  group_by(RedSoxStartingPitcherName) %>% 
+  summarize(W = sum(Result == "W"),
+            L = sum(Result == "L"),
+            Games = W + L,
+            logOddsW = log(W/L),
+            RunSupport = mean(RedSoxRunsScored)) %>% 
+  arrange(-Games) -> redsox.bypitcher 
+redsox.bypitcher %>%   
+  kable(caption = "Results of Red Sox games by starting pitcher", digits = 1)
+```
+
+Why might we want to adjust for run support when assessing the relationship between pitcher and the Red Sox winning?
+
+\vspace{1in}
+
+Let's consider only pitchers with at least 20 starts. (*why?*)
+
+```{r}
+redsox.bypitcher %>% 
+  filter(Games > 20 ) %>% 
+  pull(RedSoxStartingPitcherName) -> redsox.20plusStarters
+
+redsox.20plusStarters
+```
+
+Here is a model for pitcher and Red Sox winning adjusting for RunsScored.
+
+\begin{equation}
+\log\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1 \text{RedSoxRunsScored}_i + \beta_2 \text{Price}_i + 
+\beta_3 \text{Rodriguez}_i + \beta_4 \text{Porcello}_i
+\label{eq:modelRuns}
+\end{equation}
+
+where $\text{RunsScored}_i$ is the number of runs the Red Sox scored in game $i$ and the other variables are whether or not that pitcher started the game.
+
+```{r}
+model.pitcher <- glm(Result == "W" ~ RedSoxRunsScored + RedSoxStartingPitcherName,
+                     data = filter(redsox, RedSoxStartingPitcherName %in% redsox.20plusStarters),
+                     family = "binomial")
+summary(model.pitcher)
+```
+
+Calculate the probability the Red Sox win a game when they score 5 runs with Chris Sale pitching.
+
+\vspace{1in}
+
+What conclusions should we make from this output?
+
+\vspace{1in}
+
+Here are model predictions (win probabilities) for each pitcher by runs scored. (*why are they not linear?*)
+
+```{r, fig.height=3}
+runs = 1:10
+tibble(expand_grid(runs,redsox.20plusStarters)) %>% 
+  rename(RedSoxRunsScored = runs,
+         RedSoxStartingPitcherName = redsox.20plusStarters) %>% 
+  mutate(Win.prob = predict(model.pitcher, newdata = .,
+                            type = "response")) -> predictions
+
+predictions %>% 
+  ggplot(aes(x = RedSoxRunsScored,
+             y = Win.prob,
+             color = RedSoxStartingPitcherName)) +
+  geom_line()
+```
+
+How does a model with an interaction between RunsScored and pitcher change the interpretation?
+
+\vspace{1in}
+
+## Logistic Regression and Classification
+
+A common application for logistic regression is to predict (or classify) a binary outcome.  In other words, based on some variables, we want to say whether the outcome will be a 1 or a 0, instead of merely reporting a probability.  For example, in the analyses above, we might want to predict whether the Red Sox will win (1) or lose (0) based on how many runs they scored and who was pitching. A common approach is to fit a logistic regression model, obtain predicted probabilities, and establish a cutoff probability.
+
+Based on the model in the last section, would you classify a game that the Red Sox scored 3 runs and Chris Sale was pitching a win? What cutoff did you use?
+
+\vspace{1in}
+
+Ok, now let's do this for all games in 2018 with Porcello, Price, Rodriguez, or Sale starting and see how often our predictions are correct. To do this, we will obtain the *confusion matrix*.
+
+```{r}
+cutoff = 0.5
+redsox %>% 
+  filter(RedSoxStartingPitcherName %in% redsox.20plusStarters) %>% 
+  mutate(Win.prob = predict(model.pitcher,
+                            newdata = .,
+                            type = "response"),
+         Prediction = ifelse(Win.prob >= cutoff, "W","L")) %>% 
+  select(HomeTeam, VisitingTeam, 
+         RedSoxStartingPitcherName, 
+         RedSoxRunsScored, Win.prob, 
+         Prediction, Result) -> redsox.predictions
+
+redsox.predictions %>% 
+  select(-RedSoxStartingPitcherName) %>% 
+  head(10)
+```
+
+The confusion matrix....
+
+```{r}
+redsox.predictions %>% 
+  count(Result, Prediction) %>% 
+  pivot_wider(values_from = n,
+              names_from = Prediction)
+```
+
+
+What is the correct classification rate?
+
+\vspace{1in}
+
+
+```{r}
+redsox.predictions %>% 
+  ggplot(aes(x = RedSoxStartingPitcherName,
+             y = Win.prob,
+             color = Result)) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(yintercept = cutoff)
+```
+
+
+How could we improve this analysis with cross validation?
+
+
+
 
 
